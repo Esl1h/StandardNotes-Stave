@@ -10,7 +10,8 @@ import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { search, searchKeymap } from '@codemirror/search';
 import { lintGutter, setDiagnostics, type Diagnostic } from '@codemirror/lint';
-import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import { type SourceError } from '../core/engine';
 
 /** Marks transactions that sync the view with the prop, so they are not saved back. */
@@ -52,6 +53,17 @@ const sourceTheme = EditorView.theme({
   },
   '.cm-activeLine': { backgroundColor: 'transparent' },
 });
+
+// Token colors from the theme variables, so they read well in every theme.
+const highlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: 'var(--sn-stylekit-info-color)', fontWeight: '600' },
+  { tag: [tags.meta, tags.comment], color: 'var(--sn-stylekit-neutral-color)' },
+  { tag: tags.comment, fontStyle: 'italic' },
+  { tag: tags.string, color: 'var(--sn-stylekit-success-color)' },
+  { tag: tags.attributeName, color: 'var(--sn-stylekit-warning-color)' },
+  { tag: tags.operator, color: 'var(--sn-stylekit-info-color)' },
+  { tag: [tags.number, tags.atom, tags.punctuation], color: 'var(--sn-stylekit-neutral-color)' },
+]);
 
 /** The single change turning `from` into `to`, trimmed to what differs, so
  * the cursor and scroll position outside the edit survive the sync. */
@@ -107,7 +119,7 @@ function SourcePane(props: SourcePaneProps) {
           lineNumbers(),
           history(),
           lintGutter(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxHighlighting(highlightStyle),
           EditorView.lineWrapping,
           sourceTheme,
           languageSlot.current.of(language),
