@@ -49,3 +49,28 @@ test('a locked note can be read but not edited', async ({ page }) => {
   await expect(plugin.locator('.cm-content')).toHaveText('locked words');
   expect(await hostLogs(page, 'save-items')).toEqual([]);
 });
+
+test('the caret, the selection and the pane divider show on a dark theme', async ({ page }) => {
+  const plugin = await openHost(page, { text: 'some notes' });
+  const source = plugin.locator('.cm-content');
+  await expect(source).toContainText('some notes');
+
+  await plugin.locator('body').evaluate(() => {
+    const style = document.createElement('style');
+    style.textContent =
+      ':root { --sn-stylekit-foreground-color: rgb(230, 230, 230); --sn-stylekit-background-color: rgb(20, 20, 24); --sn-stylekit-info-color: rgb(80, 140, 255); --sn-stylekit-neutral-color: rgb(160, 160, 160); --sn-stylekit-border-color: rgb(20, 20, 24); }';
+    document.head.appendChild(style);
+  });
+
+  expect(await source.evaluate((el) => getComputedStyle(el).caretColor)).toBe('rgb(230, 230, 230)');
+  const selection = await source.evaluate(
+    (el) => getComputedStyle(el.querySelector('.cm-line'), '::selection').backgroundColor
+  );
+  expect(selection).toBe('color(srgb 0.313726 0.54902 1 / 0.35)');
+
+  // The border color of a dark theme is the background; the divider is not.
+  const divider = await plugin
+    .locator('.render-pane')
+    .evaluate((el) => getComputedStyle(el).borderLeftColor);
+  expect(divider).toBe('color(srgb 0.627451 0.627451 0.627451 / 0.5)');
+});

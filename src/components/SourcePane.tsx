@@ -33,9 +33,12 @@ interface SourcePaneProps {
 }
 
 const sourceTheme = EditorView.theme({
+  // The editor background, as in the Standard Notes plain editor; the
+  // rendering keeps the contrast background, so the panes stand apart.
   '&': {
-    backgroundColor: 'var(--sn-stylekit-contrast-background-color)',
-    color: 'var(--sn-stylekit-contrast-foreground-color)',
+    backgroundColor:
+      'var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color))',
+    color: 'var(--sn-stylekit-editor-foreground-color, var(--sn-stylekit-foreground-color))',
     fontFamily: 'var(--sn-stylekit-monospace-font, monospace)',
     fontSize: 'var(--sn-stylekit-font-size-editor)',
     height: '100%',
@@ -43,13 +46,19 @@ const sourceTheme = EditorView.theme({
   '&.cm-focused': { outline: 'none' },
   '.cm-scroller': { overflow: 'auto', fontFamily: 'inherit' },
   '.cm-gutters': {
-    backgroundColor: 'var(--sn-stylekit-contrast-background-color)',
+    backgroundColor:
+      'var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color))',
     borderRight: '1px solid var(--sn-stylekit-border-color)',
     color: 'var(--sn-stylekit-neutral-color)',
   },
-  '.cm-cursor': { borderLeftColor: 'var(--sn-stylekit-contrast-foreground-color)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-    backgroundColor: 'var(--sn-stylekit-info-color-translucent)',
+  // The native caret and selection: CodeMirror's base theme paints the
+  // caret black, lost on a dark theme, and StyleKit has no translucent
+  // accent to select with.
+  '.cm-content': {
+    caretColor: 'var(--sn-stylekit-editor-foreground-color, var(--sn-stylekit-foreground-color))',
+  },
+  '.cm-content ::selection': {
+    backgroundColor: 'color-mix(in srgb, var(--sn-stylekit-info-color) 35%, transparent)',
   },
   '.cm-activeLine': { backgroundColor: 'transparent' },
 });
