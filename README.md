@@ -9,9 +9,25 @@
 
 A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
 
-Stave is in early development: the editor, the layout and the Standard Notes integration are in place, and the notation engines are being added one by one (see [Roadmap](#roadmap)).
+Stave is in early development: ABC works end to end, and more notations are coming (see [Roadmap](#roadmap)).
+
+![Stave editing an ABC tune, light theme](.github/screenshots/stave-abc-light.png)
+
+![The same tune in a dark theme](.github/screenshots/stave-abc-dark.png)
 
 ## Features
+
+### ABC
+
+- Live rendering with [abcjs](https://www.abcjs.net) as you type, with parser errors underlined in the source at their line and column
+- A toolbar for durations, rests, dots, accidentals, ties, bar lines, repeats, ornaments and chord symbols; it writes ABC at the cursor, in the unit note length of the tune
+- Click a note in the rendering to select it in the source; the note at the cursor is highlighted in the rendering
+- Playback with a cursor that follows the notes, loop and speed from 50% to 150%, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin
+- Transpose the source a semitone at a time (key signature included)
+- Export SVG, PNG and MIDI, or download the `.abc` source
+- Syntax highlighting, completion of header fields, and a cheat sheet in the Help menu
+
+### Editor
 
 - Source and rendering side by side, stacked, or one at a time, with the panes in either order
 - A menu bar (File, Edit, View, Play, Help) and a contextual toolbar, both collapsible, with the notation of the note always visible
@@ -57,6 +73,19 @@ The second command confirms that the zip was built by this repository's release 
 ## Note format
 
 The note is the notation source, nothing else. Stave picks the engine from the text: ABC when the first line that is not empty starts with `X:`, alphaTex when lines start with a backslash tag such as `\title`. An empty note offers the engines with a template each. Switching the engine of a written note asks first and never converts the text.
+
+An ABC note is plain [ABC 2.1](https://abcnotation.com/wiki/abc:standard:v2.1), so it opens in any ABC tool:
+
+```
+X:1
+T:Morning on the Stave
+M:4/4
+L:1/8
+K:G
+|: "G"G2 BG dGBG | "C"c2 ec "G"B2 dB | "Am"A2 cA "D"F2 AF | "G"G4 z4 :|
+```
+
+[examples/](examples) has a note for each notation, used by the tests and the screenshots.
 
 ## Compatibility
 
@@ -127,7 +156,7 @@ The `Release` workflow fails unless the tag matches every version file. It runs 
 
 ## Roadmap
 
-1. ABC with abcjs: rendering, toolbar, playback, click to source, SVG and MIDI export
+1. ABC with abcjs: rendering, toolbar, playback, click to source, export (done)
 2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export
 3. Engine detection and switching, the full menu, mobile polish
 4. Verovio as a higher quality renderer for ABC
@@ -140,5 +169,7 @@ The decisions behind the project are recorded in [docs/adr](docs/adr/README.md).
 
 - Built on [Standard Notes](https://standardnotes.com) and its [component relay](https://github.com/standardnotes/component-relay) (AGPL-3.0), copied into `src/vendor/`
 - Editor: [CodeMirror](https://codemirror.net) (MIT); icons: [Lucide](https://lucide.dev) (ISC)
+- ABC rendering and playback: [abcjs](https://github.com/paulrosen/abcjs) (MIT)
+- Piano samples: the Fluid R3 GM SoundFont (CC BY 3.0), rendered to MP3 by [midi-js-soundfonts](https://github.com/paulrosen/midi-js-soundfonts) (MIT); see `public/soundfont/README.md`
 - `THIRD_PARTY_LICENSES.md`, shipped next to the built page, lists every bundled dependency with its license
 - Licensed under [AGPL-3.0](LICENSE) or later

@@ -15,3 +15,4 @@ Decisions that shape how this plugin is built and released, one file each, in th
 11. [Ship every asset with the build](0011-offline-assets.md)
 12. [Build the UI on the patterns of the Milkdown plugin](0012-ui-from-the-milkdown-plugin.md)
 13. [A bundle budget, reported at every milestone](0013-bundle-budget.md)
+14. [Play ABC with piano samples shipped in the build](0014-abc-playback-samples.md)
