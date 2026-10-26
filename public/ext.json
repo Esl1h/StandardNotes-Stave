@@ -1,0 +1,14 @@
+{
+  "identifier": "org.esl1h.sn-stave-editor",
+  "name": "Stave",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "note_type": "plain-text",
+  "version": "0.1.0",
+  "description": "Music notation and tablature editor (alphaTex, ABC, ChordPro)",
+  "url": "https://esli.cafe/StandardNotes-Stave/index.html",
+  "download_url": "https://github.com/Esl1h/StandardNotes-Stave/releases/download/v0.1.0/extension.zip",
+  "latest_url": "https://esli.cafe/StandardNotes-Stave/ext.json",
+  "marketing_url": "https://github.com/Esl1h/StandardNotes-Stave",
+  "thumbnail_url": "https://esli.cafe/StandardNotes-Stave/logo512.png"
+}
