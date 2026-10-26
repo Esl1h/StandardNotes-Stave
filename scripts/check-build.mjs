@@ -13,6 +13,8 @@ const entryPoints = new Set([
   'package.json',
   'robots.txt',
   'THIRD_PARTY_LICENSES.md',
+  // The font's license, shipped next to it as the SIL OFL asks.
+  'font/Bravura-OFL.txt',
 ]);
 const textFile = /\.(html|js|css|json|txt)$/;
 // Loaded by a path the player builds at runtime (instrument and note name),
