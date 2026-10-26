@@ -504,6 +504,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
               selection: { anchor: Math.min(from, length), head: Math.min(to, length) },
               scrollIntoView: true,
             });
+            // The selection shows, and typing goes to the clicked note.
+            view.focus();
           }}
         />
       )}
