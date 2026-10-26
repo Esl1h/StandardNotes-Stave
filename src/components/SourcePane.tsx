@@ -47,9 +47,12 @@ const sourceTheme = EditorView.theme({
     borderRight: '1px solid var(--sn-stylekit-border-color)',
     color: 'var(--sn-stylekit-neutral-color)',
   },
-  '.cm-cursor': { borderLeftColor: 'var(--sn-stylekit-contrast-foreground-color)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-    backgroundColor: 'var(--sn-stylekit-info-color-translucent)',
+  // The native caret and selection: CodeMirror's base theme paints the
+  // caret black, lost on a dark theme, and StyleKit has no translucent
+  // accent to select with.
+  '.cm-content': { caretColor: 'var(--sn-stylekit-contrast-foreground-color)' },
+  '.cm-content ::selection': {
+    backgroundColor: 'color-mix(in srgb, var(--sn-stylekit-info-color) 35%, transparent)',
   },
   '.cm-activeLine': { backgroundColor: 'transparent' },
 });
