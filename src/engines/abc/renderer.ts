@@ -75,18 +75,31 @@ class AbcPlayer implements Player {
     const synth = new abcjs.synth.CreateSynth();
     this.synth = synth;
     this.emit({ playing: true });
-    await synth.init({
-      visualObj: tune,
-      millisecondsPerMeasure: tune.millisecondsPerMeasure() / this.state.speed,
-      options: {
-        soundFontUrl: sourceFile(),
-        drumOff: true,
-        sequenceCallback: (tracks) =>
-          tracks.map((track) => track.map((note) => ({ ...note, instrument: INSTRUMENT }))),
-        onEnded: () => this.ended(),
-      },
-    });
-    await synth.prime();
+    try {
+      const loading = await synth.init({
+        visualObj: tune,
+        millisecondsPerMeasure: tune.millisecondsPerMeasure() / this.state.speed,
+        options: {
+          soundFontUrl: sourceFile(),
+          // What abcjs uses for these same samples from its default URL.
+          soundFontVolumeMultiplier: 3,
+          drumOff: true,
+          sequenceCallback: (tracks) =>
+            tracks.map((track) => track.map((note) => ({ ...note, instrument: INSTRUMENT }))),
+          onEnded: () => this.ended(),
+        },
+      });
+      // abcjs resolves even when no sample loaded, and plays silence.
+      if (loading.error.length && !loading.loaded.length && !loading.cached.length) {
+        throw new Error(`The piano samples could not be loaded (${loading.error[0]}).`);
+      }
+      await synth.prime();
+    } catch (error) {
+      if (this.synth === synth) this.stop();
+      // abcjs rejects with plain { message } objects too.
+      const message = (error as { message?: unknown })?.message;
+      throw error instanceof Error ? error : new Error(String(message ?? error));
+    }
     // Stopped or replaced while the samples were loading.
     if (this.synth !== synth) return;
     this.timing = new abcjs.TimingCallbacks(tune, {

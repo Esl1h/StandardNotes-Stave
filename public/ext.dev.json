@@ -3,7 +3,6 @@
   "name": "Stave (Dev)",
   "content_type": "SN|Component",
   "area": "editor-editor",
-  "note_type": "plain-text",
   "version": "0.1.0",
   "description": "DEV music notation and tablature editor for Standard Notes",
   "url": "http://localhost:3000/index.html",
