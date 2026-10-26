@@ -1,10 +1,11 @@
 import { type Engine } from '../core/engine';
+import { abcEngine } from './abc';
 
 /**
  * The notation engines, in the order they are offered and tried by
  * detection. The only file that lists them (docs/adr/0009).
  */
-export const ENGINES: Engine[] = [];
+export const ENGINES: Engine[] = [abcEngine];
 
 export const engineById = (id: string): Engine | undefined =>
   ENGINES.find((engine) => engine.id === id);

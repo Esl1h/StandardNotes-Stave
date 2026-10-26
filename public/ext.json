@@ -3,7 +3,6 @@
   "name": "Stave",
   "content_type": "SN|Component",
   "area": "editor-editor",
-  "note_type": "plain-text",
   "version": "0.1.0",
   "description": "Music notation and tablature editor (alphaTex, ABC, ChordPro)",
   "url": "https://esli.cafe/StandardNotes-Stave/index.html",

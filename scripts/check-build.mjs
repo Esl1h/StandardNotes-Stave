@@ -15,6 +15,9 @@ const entryPoints = new Set([
   'THIRD_PARTY_LICENSES.md',
 ]);
 const textFile = /\.(html|js|css|json|txt)$/;
+// Loaded by a path the player builds at runtime (instrument and note name),
+// which no file in the build spells out.
+const loadedByName = /^soundfont\//;
 
 const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
@@ -29,6 +32,7 @@ const texts = files
 const unused = files.filter(
   (file) =>
     !entryPoints.has(file) &&
+    !loadedByName.test(file) &&
     !texts.some(({ file: other, body }) => other !== file && body.includes(basename(file)))
 );
 

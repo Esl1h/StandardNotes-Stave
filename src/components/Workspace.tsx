@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type EditorView } from '@codemirror/view';
 import { redo, undo } from '@codemirror/commands';
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronUp,
   Menu as MenuIcon,
@@ -86,6 +88,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     state: STOPPED,
   });
   const [dialog, setDialog] = useState<DialogName | null>(null);
+  const [playFailure, setPlayFailure] = useState<{ instance: EngineInstance; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
 
   const engine: Engine | undefined = useMemo(() => {
@@ -167,7 +170,10 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     const active = instance?.player;
     if (!active) return;
     if (player.playing) active.pause();
-    else void active.play();
+    else {
+      setPlayFailure(undefined);
+      active.play().catch((error: Error) => setPlayFailure({ instance, message: error.message }));
+    }
   }, [instance, player.playing]);
 
   const exportAs = useCallback(
@@ -384,6 +390,33 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     </label>
   );
 
+  const transposeTools = instance?.transpose ? (
+    <div className="toolbar-group" role="group" aria-label="Transpose">
+      <button
+        type="button"
+        className="tool"
+        aria-label="Transpose down"
+        title={`Transpose down (${ctrl}Down)`}
+        disabled={!editable}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => void transpose(-1)}
+      >
+        <ArrowDown size={16} />
+      </button>
+      <button
+        type="button"
+        className="tool"
+        aria-label="Transpose up"
+        title={`Transpose up (${ctrl}Up)`}
+        disabled={!editable}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => void transpose(1)}
+      >
+        <ArrowUp size={16} />
+      </button>
+    </div>
+  ) : null;
+
   const playback = instance?.player ? (
     <div className="toolbar-group" role="group" aria-label="Playback">
       <button
@@ -475,6 +508,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
               selection: { anchor: Math.min(from, length), head: Math.min(to, length) },
               scrollIntoView: true,
             });
+            // The selection shows, and typing goes to the clicked note.
+            view.focus();
           }}
         />
       )}
@@ -531,7 +566,15 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           tools={engine?.tools() ?? []}
           editable={editable}
           onTool={applyCmd}
-          trailing={playback}
+          trailing={
+            <>
+              {transposeTools}
+              {transposeTools && playback && (
+                <span className="toolbar-separator" aria-hidden="true" />
+              )}
+              {playback}
+            </>
+          }
         />
       )}
       {prefs.menuBar && !prefs.toolbar && (
@@ -548,6 +591,11 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
       {locked && (
         <p className="locked-notice" role="status">
           This note is locked: it can be read and played, not edited.
+        </p>
+      )}
+      {playFailure && playFailure.instance === instance && (
+        <p className="play-error" role="alert">
+          Playback failed: {playFailure.message}
         </p>
       )}
       <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>

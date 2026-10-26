@@ -258,6 +258,14 @@ select {
   padding: 4px 12px;
 }
 
+.play-error {
+  background-color: var(--sn-stylekit-secondary-background-color);
+  color: var(--sn-stylekit-danger-color);
+  font-size: 0.8rem;
+  margin: 0;
+  padding: 4px 12px;
+}
+
 .panes {
   display: grid;
   flex: 1 1 auto;
@@ -452,5 +460,24 @@ select {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+  }
+}
+
+.render-target svg {
+  display: block;
+}
+
+// The note at the cursor and the notes sounding, in the theme's accent.
+// Over the fill and stroke abcjs writes on each element.
+.render-target {
+  .stave-highlight,
+  .stave-playing {
+    fill: var(--sn-stylekit-info-color) !important;
+    stroke: var(--sn-stylekit-info-color) !important;
+  }
+
+  .abcjs-note,
+  .abcjs-rest {
+    cursor: pointer;
   }
 }

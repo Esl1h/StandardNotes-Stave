@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { openHost } from './snHost.js';
+
+const EXAMPLE = readFileSync('examples/abc.abc', 'utf8');
 
 // See mobile-origin.spec.js: the opaque host may not load localhost.
 test.use({ launchOptions: { args: ['--disable-features=LocalNetworkAccessChecks'] } });
 
-// The built page carries a Content Security Policy (docs/adr/0005); opening
-// a note may not trip it, in the web host or in the opaque-origin mobile one.
+// The built page carries a Content Security Policy (docs/adr/0005); drawing
+// and playing a note may not trip it, in the web host or in the
+// opaque-origin mobile one.
 for (const opaqueOrigin of [false, true]) {
-  test(`opening a note trips no CSP rule${opaqueOrigin ? ', opaque origin' : ''}`, async ({
+  test(`drawing and playing ABC trips no CSP rule${opaqueOrigin ? ', opaque origin' : ''}`, async ({
     page,
   }) => {
     const violations = [];
@@ -15,10 +19,18 @@ for (const opaqueOrigin of [false, true]) {
       if (/Content Security Policy/.test(message.text())) violations.push(message.text());
     });
 
-    const plugin = await openHost(page, { text: 'some text', opaqueOrigin });
+    let samples = 0;
+    page.on('requestfinished', (request) => {
+      if (request.url().includes('/soundfont/')) samples++;
+    });
+
+    const plugin = await openHost(page, { text: EXAMPLE, opaqueOrigin });
 
     await expect(plugin.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);
-    await expect(plugin.locator('.cm-content')).toContainText('some text');
+    await expect(plugin.locator('.render-target svg')).toBeVisible();
+    await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect.poll(() => samples).toBeGreaterThan(0);
+    await plugin.getByRole('button', { name: 'Stop' }).click();
     expect(violations).toEqual([]);
   });
 }
