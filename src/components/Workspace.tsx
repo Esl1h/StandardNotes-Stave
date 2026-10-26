@@ -328,6 +328,16 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           label: `Reset zoom (${Math.round(prefs.zoom * 100)}%)`,
           onSelect: () => setPref('zoom', 1),
         },
+        ...(instance?.views?.length
+          ? [
+              'separator' as const,
+              ...instance.views.map((each) =>
+                check(each.label, (prefs.renderView || instance.views?.[0].id) === each.id, () =>
+                  setPref('renderView', each.id)
+                )
+              ),
+            ]
+          : []),
         'separator',
         check('Toolbar', prefs.toolbar, () => setPref('toolbar', !prefs.toolbar)),
         {
@@ -355,6 +365,22 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
             instance?.player?.setSpeed(speed)
           )
         ),
+        ...(player.tracks?.length
+          ? [
+              'separator' as const,
+              ...player.tracks.flatMap((track, index) => {
+                const name = track.name || `Track ${index + 1}`;
+                return [
+                  check(`Mute ${name}`, track.muted, () =>
+                    instance?.player?.setTrackMute?.(index, !track.muted)
+                  ),
+                  check(`Solo ${name}`, track.solo, () =>
+                    instance?.player?.setTrackSolo?.(index, !track.solo)
+                  ),
+                ];
+              }),
+            ]
+          : []),
       ],
     },
     {
@@ -497,6 +523,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           src={rawText}
           theme={theme}
           zoom={prefs.zoom}
+          view={prefs.renderView}
           highlight={selection}
           onErrors={(list) => setReported({ engine, errors: list })}
           onInstance={setInstance}

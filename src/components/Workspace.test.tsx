@@ -184,3 +184,61 @@ test('a failed playback says why and shows Play again', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('samples could not be loaded (C4)');
   expect(screen.getByRole('button', { name: 'Play' })).toBeEnabled();
 });
+
+test('offers the views and track controls of the renderer', async () => {
+  const setView = vi.fn();
+  const setTrackMute = vi.fn();
+  const setTrackSolo = vi.fn();
+  const player = {
+    play: vi.fn(),
+    pause: vi.fn(),
+    stop: vi.fn(),
+    setSpeed: vi.fn(),
+    setLoop: vi.fn(),
+    setTrackMute,
+    setTrackSolo,
+    onStateChange: vi.fn((cb: (state: object) => void) =>
+      cb({
+        playing: false,
+        speed: 1,
+        loop: false,
+        tracks: [
+          { name: 'Guitar', muted: false, solo: false },
+          { name: '', muted: true, solo: false },
+        ],
+      })
+    ),
+  };
+  one.mount.mockImplementationOnce(
+    async () =>
+      ({
+        render: vi.fn(async () => ({ errors: [] })),
+        setTheme: vi.fn(),
+        destroy: vi.fn(),
+        player,
+        views: [
+          { id: 'both', label: 'Score and tab' },
+          { id: 'tab', label: 'Tab' },
+        ],
+        setView,
+      }) as never
+  );
+  setup('1: notes');
+  await screen.findByRole('button', { name: 'Play' });
+
+  fireEvent.click(screen.getByRole('menuitem', { name: 'View' }));
+  expect(screen.getByRole('menuitemcheckbox', { name: 'Score and tab' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  );
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Tab' }));
+  await waitFor(() => expect(setView).toHaveBeenLastCalledWith('tab'));
+  expect(window.localStorage.getItem('standardnotes-stave-render-view')).toBe('tab');
+
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Solo Guitar' }));
+  expect(setTrackSolo).toHaveBeenCalledWith(0, true);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Mute Track 2' }));
+  expect(setTrackMute).toHaveBeenCalledWith(1, false);
+});

@@ -55,6 +55,8 @@ export interface RenderOpts {
   theme: ThemeColors;
   /** 1 is the engine's natural size. */
   zoom: number;
+  /** One of the instance's views, as last chosen. */
+  view?: string;
 }
 
 export interface SourceError {
@@ -71,11 +73,19 @@ export interface RenderResult {
   errors: SourceError[];
 }
 
+export interface TrackState {
+  name: string;
+  muted: boolean;
+  solo: boolean;
+}
+
 export interface PlayerState {
   playing: boolean;
   /** Tempo multiplier, 1 is as written. */
   speed: number;
   loop: boolean;
+  /** The tracks a player can mute or solo, when it can. */
+  tracks?: TrackState[];
 }
 
 export interface Player {
@@ -84,7 +94,15 @@ export interface Player {
   stop(): void;
   setSpeed(speed: number): void;
   setLoop(loop: boolean): void;
+  setTrackMute?(index: number, muted: boolean): void;
+  setTrackSolo?(index: number, solo: boolean): void;
   onStateChange(cb: (state: PlayerState) => void): void;
+}
+
+/** A way to show the music, such as standard notation or tablature. */
+export interface ViewDef {
+  id: string;
+  label: string;
 }
 
 export type ExportFormat = 'svg' | 'png' | 'midi' | 'pdf' | 'gp7';
@@ -103,6 +121,9 @@ export interface EngineInstance {
   export?(fmt: ExportFormat): Promise<Blob>;
   setTheme(theme: ThemeColors): void;
   setZoom?(zoom: number): void;
+  /** The ways this instance can show the music; the first is the default. */
+  views?: ViewDef[];
+  setView?(id: string): void;
   destroy(): void;
 }
 

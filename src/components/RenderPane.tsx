@@ -14,6 +14,8 @@ interface RenderPaneProps {
   src: string;
   theme: ThemeColors;
   zoom: number;
+  /** The engine view last chosen (score, tab), when the engine has views. */
+  view?: string;
   /** Source range to highlight in the drawing (the cursor or selection). */
   highlight?: [number, number];
   onErrors: (errors: SourceError[]) => void;
@@ -28,7 +30,7 @@ interface RenderPaneProps {
  * position, and a failing render reports errors instead of breaking the pane.
  */
 function RenderPane(props: RenderPaneProps) {
-  const { engine, src, theme, zoom, highlight } = props;
+  const { engine, src, theme, zoom, view, highlight } = props;
   const paneRef = useRef<HTMLDivElement | null>(null);
   const targetRef = useRef<HTMLDivElement | null>(null);
   const [instance, setInstance] = useState<EngineInstance | null>(null);
@@ -37,7 +39,7 @@ function RenderPane(props: RenderPaneProps) {
   useEffect(() => {
     callbacks.current = props;
   });
-  const firstOpts = useRef({ theme, zoom });
+  const firstOpts = useRef({ theme, zoom, view });
 
   useEffect(() => {
     if (!engine || !targetRef.current) {
@@ -110,6 +112,10 @@ function RenderPane(props: RenderPaneProps) {
   useEffect(() => {
     instance?.setZoom?.(zoom);
   }, [instance, zoom]);
+
+  useEffect(() => {
+    if (view) instance?.setView?.(view);
+  }, [instance, view]);
 
   useEffect(() => {
     if (instance && highlight) {
