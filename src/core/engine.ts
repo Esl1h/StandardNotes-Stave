@@ -17,7 +17,7 @@ export type Cmd =
   | { kind: 'note'; pitch: string; dur: Dur; dotted?: boolean }
   | { kind: 'rest'; dur: Dur; dotted?: boolean }
   | { kind: 'accidental'; value: 'sharp' | 'flat' | 'natural' }
-  // dot lengthens the note before the cursor by half.
+  // dot puts a dot on the note before the cursor, or takes it off.
   | { kind: 'tie' | 'dot' | 'bar' | 'doubleBar' | 'repeatStart' | 'repeatEnd' }
   | { kind: 'chord'; symbol: string }
   | { kind: 'header'; key: HeaderKey; value: string }
