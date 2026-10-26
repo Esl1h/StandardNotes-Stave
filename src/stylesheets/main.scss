@@ -454,3 +454,22 @@ select {
     transition: none !important;
   }
 }
+
+.render-target svg {
+  display: block;
+}
+
+// The note at the cursor and the notes sounding, in the theme's accent.
+// Over the fill and stroke abcjs writes on each element.
+.render-target {
+  .stave-highlight,
+  .stave-playing {
+    fill: var(--sn-stylekit-info-color) !important;
+    stroke: var(--sn-stylekit-info-color) !important;
+  }
+
+  .abcjs-note,
+  .abcjs-rest {
+    cursor: pointer;
+  }
+}
