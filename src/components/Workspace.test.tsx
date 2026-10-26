@@ -154,3 +154,33 @@ test('Ctrl+Shift+M hides and shows the bars', () => {
   fireEvent.keyDown(document.body, { code: 'KeyM', key: 'M', ctrlKey: true, shiftKey: true });
   expect(screen.getByRole('menubar')).toBeInTheDocument();
 });
+
+test('a failed playback says why and shows Play again', async () => {
+  const player = {
+    play: vi.fn(async () => {
+      throw new Error('The piano samples could not be loaded (C4).');
+    }),
+    pause: vi.fn(),
+    stop: vi.fn(),
+    setSpeed: vi.fn(),
+    setLoop: vi.fn(),
+    onStateChange: vi.fn((cb: (state: object) => void) =>
+      cb({ playing: false, speed: 1, loop: false })
+    ),
+  };
+  one.mount.mockImplementationOnce(
+    async () =>
+      ({
+        render: vi.fn(async () => ({ errors: [] })),
+        setTheme: vi.fn(),
+        destroy: vi.fn(),
+        player,
+      }) as never
+  );
+  setup('1: notes');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Play' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('samples could not be loaded (C4)');
+  expect(screen.getByRole('button', { name: 'Play' })).toBeEnabled();
+});

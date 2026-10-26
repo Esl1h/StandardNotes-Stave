@@ -1,3 +1,4 @@
+import abcjs from 'abcjs';
 import { mountAbc, parseWarnings } from './renderer';
 
 const theme = {
@@ -101,6 +102,25 @@ describe('the player', () => {
     await expect(instance.player!.play()).rejects.toThrow('cannot play audio');
     instance.player!.pause();
     instance.player!.stop();
+  });
+
+  test('fails and stops when no sample could be loaded', async () => {
+    vi.spyOn(abcjs.synth, 'supportsAudio').mockReturnValue(true);
+    vi.spyOn(abcjs.synth, 'CreateSynth').mockImplementation(function () {
+      return {
+        init: async () => ({ cached: [], loaded: [], error: ['C4'] }),
+        prime: vi.fn(),
+        stop: vi.fn(),
+      } as never;
+    });
+    const instance = await mountAbc(document.createElement('div'), { theme, zoom: 1 });
+    await instance.render('X:1\nK:C\nC|]\n');
+    const states: Array<{ playing: boolean }> = [];
+    instance.player!.onStateChange((state) => states.push(state));
+
+    await expect(instance.player!.play()).rejects.toThrow('samples could not be loaded (C4)');
+    expect(states.at(-1)?.playing).toBe(false);
+    vi.restoreAllMocks();
   });
 
   test('does nothing before a tune is drawn', async () => {

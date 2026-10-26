@@ -88,6 +88,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     state: STOPPED,
   });
   const [dialog, setDialog] = useState<DialogName | null>(null);
+  const [playFailure, setPlayFailure] = useState<{ instance: EngineInstance; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
 
   const engine: Engine | undefined = useMemo(() => {
@@ -169,7 +170,10 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     const active = instance?.player;
     if (!active) return;
     if (player.playing) active.pause();
-    else void active.play();
+    else {
+      setPlayFailure(undefined);
+      active.play().catch((error: Error) => setPlayFailure({ instance, message: error.message }));
+    }
   }, [instance, player.playing]);
 
   const exportAs = useCallback(
@@ -587,6 +591,11 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
       {locked && (
         <p className="locked-notice" role="status">
           This note is locked: it can be read and played, not edited.
+        </p>
+      )}
+      {playFailure && playFailure.instance === instance && (
+        <p className="play-error" role="alert">
+          Playback failed: {playFailure.message}
         </p>
       )}
       <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>
