@@ -1,0 +1,85 @@
+{
+  "name": "standardnotes-stave",
+  "version": "0.1.0",
+  "description": "Music notation and tablature editor for Standard Notes (alphaTex, ABC)",
+  "keywords": [
+    "Standard Notes",
+    "Standard Notes Extensions",
+    "Standard Notes Editors",
+    "Music notation",
+    "ABC notation",
+    "alphaTab"
+  ],
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Esl1h/StandardNotes-Stave.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Esl1h/StandardNotes-Stave/issues"
+  },
+  "sn": {
+    "main": "build/index.html"
+  },
+  "scripts": {
+    "start": "vite --port 3004",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "server": "vite preview --port 3000",
+    "server-cors": "vite preview --port 3000",
+    "pretty": "prettier --write 'src/**/*.{html,css,scss,js,jsx,ts,tsx,json}' README.md",
+    "format:check": "prettier --check 'src/**/*.{html,css,scss,js,jsx,ts,tsx,json}' README.md",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "version:bump": "node scripts/version-bump.mjs",
+    "version:check": "node scripts/version-bump.mjs --check",
+    "changelog": "sh -c 'git-cliff -o CHANGELOG.md \"$@\" && prettier --write CHANGELOG.md' changelog",
+    "check:build": "node scripts/check-build.mjs",
+    "check:lockfile": "node scripts/check-lockfile.mjs",
+    "size": "node scripts/bundle-size.mjs"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@standardnotes/stylekit": "^5.29.3",
+    "lucide-react": "^1.61.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sass": "^1.105.1",
+    "uuid": "^14.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^22.20.4",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "fast-check": "^4.10.2",
+    "git-cliff": "^2.14.2",
+    "jsdom": "^30.1.1",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,60 @@
+name: Coverage badge
+
+# Measures unit-test coverage on main and publishes a shields.io endpoint
+# JSON to the `badges` branch; the README badge reads it from there. Kept
+# separate from CI so a badge problem can never block a build.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  badge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Pushes the badges branch.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # The push steps carry their own token; none is left in .git/config
+        # for the build and test steps to read.
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # This job can write to the repository; no dependency needs its
+      # install scripts to run the tests.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Build the badge JSON
+        run: node scripts/coverage-badge.mjs
+
+      # A single moving commit on an otherwise unused branch; no history to
+      # keep, and force-push keeps it at one commit forever.
+      - name: Publish to the badges branch
+        run: |
+          # git asks gh for the token, so it is never written into a URL.
+          gh auth setup-git
+          REPO="https://github.com/${GITHUB_REPOSITORY}.git"
+          cd badges
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add coverage.json
+          git commit -qm "Coverage badge for ${GITHUB_SHA}"
+          git push -qf "$REPO" badges
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+# A newer push supersedes the run in progress on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build (node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # 22 is the .nvmrc version that releases build with; 24 is the active
+    # LTS, tested so moving .nvmrc to it holds no surprises.
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # Before the install, so an unexpected git dependency never gets to
+      # run its install scripts.
+      - name: Check git dependencies
+        run: npm run check:lockfile
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check version sync
+        run: npm run version:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Check build contents
+        run: npm run check:build
+
+      # Raw and gzip size of the initial load and the lazy chunks
+      # (docs/adr/0013-bundle-budget.md), on the run summary page.
+      - name: Report bundle size
+        if: matrix.node == 22
+        run: |
+          {
+            echo '### Bundle size'
+            echo '```'
+            npm run -s size
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Advisory only: surfaces critical advisories in the log without
+      # blocking a build; Dependabot raises the fixes.
+      - name: Audit dependencies
+        if: matrix.node == 22
+        run: npm audit --audit-level=critical
+        continue-on-error: true
+
+  # The build the standardnotes/plugins repository would run: Yarn 3, no
+  # package-lock.json, from a clean copy. Their CI uses Node 16, which no
+  # current Vite supports; this job keeps everything else the same.
+  community-build:
+    name: community build (yarn 3)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Build with Yarn 3
+        env:
+          YARN: corepack yarn@3.2.1
+        run: sh scripts/community-build.sh
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Check git dependencies
+        run: npm run check:lockfile
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The Chromium download is ~150 MB on every run; key it on the lock
+      # (which pins the Playwright version) so only version bumps re-download.
+      - name: Cache Playwright browser
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Builds and serves the plugin like a Standard Notes dev install, then
+      # runs the demo flow and the host harness, including the throttled
+      # mobile registration scenario.
+      - name: End to end tests
+        run: npm run e2e
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7

@@ -1,0 +1,56 @@
+name: Bug report
+description: Report something that is broken or behaves unexpectedly
+labels: ['bug']
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Web app
+        - Desktop app
+        - Mobile app
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Editor version
+      description: Preferences > Plugins, or the release you installed
+    validations:
+      required: true
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Notation
+      options:
+        - ABC
+        - alphaTex
+        - Any
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a note with the Stave editor
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: text
+    attributes:
+      label: The note's text
+      description: The smallest note text that reproduces it (remove private content)
+      render: text
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Notes
+      description: Screenshots, console errors

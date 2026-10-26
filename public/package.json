@@ -1,0 +1,21 @@
+{
+  "name": "standardnotes-stave",
+  "version": "0.1.0",
+  "description": "Music notation and tablature editor for Standard Notes (alphaTex, ABC)",
+  "keywords": [
+    "Standard Notes",
+    "Standard Notes Extensions"
+  ],
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Esl1h/StandardNotes-Stave.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Esl1h/StandardNotes-Stave/issues"
+  },
+  "sn": {
+    "main": "index.html"
+  }
+}
