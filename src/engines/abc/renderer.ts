@@ -81,6 +81,8 @@ class AbcPlayer implements Player {
         millisecondsPerMeasure: tune.millisecondsPerMeasure() / this.state.speed,
         options: {
           soundFontUrl: sourceFile(),
+          // What abcjs uses for these same samples from its default URL.
+          soundFontVolumeMultiplier: 3,
           drumOff: true,
           sequenceCallback: (tracks) =>
             tracks.map((track) => track.map((note) => ({ ...note, instrument: INSTRUMENT }))),
