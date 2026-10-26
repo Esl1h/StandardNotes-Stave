@@ -30,13 +30,30 @@ const rows = walk(root)
   })
   .sort((a, b) => b.gzip - a.gzip);
 
+// Files a player fetches one by one (a sample per note) read as one row.
+const grouped = [];
+for (const row of rows) {
+  const dir = /^(soundfont\/[^/]+\/[^/]+)\//.exec(row.file)?.[1];
+  const group = dir && grouped.find((other) => other.file === `${dir}/`);
+  if (group) {
+    group.raw += row.raw;
+    group.gzip += row.gzip;
+    group.count += 1;
+  } else {
+    grouped.push(dir ? { ...row, file: `${dir}/`, count: 1 } : row);
+  }
+}
+
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 const total = (list, key) => list.reduce((sum, row) => sum + row[key], 0);
 
 for (const [title, list] of [
-  ['Initial load', rows.filter((row) => row.initial)],
-  ['Lazy', rows.filter((row) => !row.initial)],
+  ['Initial load', grouped.filter((row) => row.initial)],
+  ['Lazy', grouped.filter((row) => !row.initial)],
 ]) {
   console.log(`${title}: ${kb(total(list, 'raw'))} raw, ${kb(total(list, 'gzip'))} gzip`);
-  for (const row of list) console.log(`  ${row.file}  ${kb(row.raw)} raw, ${kb(row.gzip)} gzip`);
+  for (const row of list) {
+    const files = row.count ? ` (${row.count} files, loaded one by one)` : '';
+    console.log(`  ${row.file}${files}  ${kb(row.raw)} raw, ${kb(row.gzip)} gzip`);
+  }
 }
