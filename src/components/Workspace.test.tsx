@@ -242,3 +242,26 @@ test('offers the views and track controls of the renderer', async () => {
   fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Mute Track 2' }));
   expect(setTrackMute).toHaveBeenCalledWith(1, false);
 });
+
+test('a failed export says why', async () => {
+  one.mount.mockImplementationOnce(
+    async () =>
+      ({
+        render: vi.fn(async () => ({ errors: [] })),
+        setTheme: vi.fn(),
+        destroy: vi.fn(),
+        exportFormats: ['midi'],
+        export: vi.fn(async () => {
+          throw new Error('No notes.');
+        }),
+      }) as never
+  );
+  setup('1: notes');
+  // The renderer mounts asynchronously; its export formats come with it.
+  await act(async () => {});
+
+  fireEvent.click(screen.getByRole('menuitem', { name: 'File' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: /^Export MIDI file/ }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Export failed: No notes.');
+});
