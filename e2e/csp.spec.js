@@ -34,3 +34,27 @@ for (const opaqueOrigin of [false, true]) {
     expect(violations).toEqual([]);
   });
 }
+
+const ALPHATEX = readFileSync('examples/alphatex.atex', 'utf8');
+
+// alphaTab starts its player worker from a blob (docs/adr/0015).
+for (const opaqueOrigin of [false, true]) {
+  test(`drawing and playing alphaTex trips no CSP rule${opaqueOrigin ? ', opaque origin' : ''}`, async ({
+    page,
+  }) => {
+    const violations = [];
+    page.on('console', (message) => {
+      if (/Content Security Policy/.test(message.text())) violations.push(message.text());
+    });
+
+    const plugin = await openHost(page, { text: ALPHATEX, opaqueOrigin });
+
+    await expect(plugin.locator('.render-target .at-surface svg').first()).toBeVisible();
+    await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+    const cursor = plugin.locator('.at-cursor-beat');
+    const start = await cursor.evaluate((el) => el.style.transform);
+    await expect.poll(() => cursor.evaluate((el) => el.style.transform)).not.toBe(start);
+    await plugin.getByRole('button', { name: 'Stop' }).click();
+    expect(violations).toEqual([]);
+  });
+}
