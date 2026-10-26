@@ -266,6 +266,10 @@ select {
   padding: 4px 12px;
 }
 
+// Between the panes. Dark themes set the border color close to the
+// background, so the neutral gray of the theme draws the line instead.
+$pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%, transparent);
+
 .panes {
   display: grid;
   flex: 1 1 auto;
@@ -279,7 +283,7 @@ select {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 
     .pane + .pane {
-      border-left: 1px solid var(--sn-stylekit-border-color);
+      border-left: $pane-divider;
     }
   }
 
@@ -287,7 +291,7 @@ select {
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
 
     .pane + .pane {
-      border-top: 1px solid var(--sn-stylekit-border-color);
+      border-top: $pane-divider;
     }
   }
 }
@@ -448,7 +452,7 @@ select {
 
     .pane + .pane {
       border-left: none;
-      border-top: 1px solid var(--sn-stylekit-border-color);
+      border-top: $pane-divider;
     }
   }
 
