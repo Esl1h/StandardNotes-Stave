@@ -485,3 +485,28 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
     cursor: pointer;
   }
 }
+
+// alphaTab's playback cursor and the beat at the source cursor, in the
+// theme's accent.
+.render-target {
+  .at-cursor-bar {
+    background-color: color-mix(in srgb, var(--sn-stylekit-info-color) 12%, transparent);
+  }
+
+  .at-cursor-beat {
+    background-color: var(--sn-stylekit-info-color);
+    width: 3px;
+  }
+
+  .at-highlight * {
+    fill: var(--sn-stylekit-info-color);
+    stroke: var(--sn-stylekit-info-color);
+  }
+
+  .stave-beat-marker {
+    background-color: color-mix(in srgb, var(--sn-stylekit-info-color) 25%, transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    position: absolute;
+  }
+}
