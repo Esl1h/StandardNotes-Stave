@@ -17,3 +17,4 @@ Decisions that shape how this plugin is built and released, one file each, in th
 13. [A bundle budget, reported at every milestone](0013-bundle-budget.md)
 14. [Play ABC with piano samples shipped in the build](0014-abc-playback-samples.md)
 15. [Run alphaTab in the Standard Notes iframe](0015-alphatab-in-the-standard-notes-iframe.md)
+16. [No Verovio renderer for ABC, for now](0016-no-verovio-renderer-for-abc.md)

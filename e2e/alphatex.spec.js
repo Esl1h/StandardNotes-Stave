@@ -283,3 +283,69 @@ test('loops the beats of the selection', async ({ page }) => {
   }
   await plugin.getByRole('button', { name: 'Stop' }).click();
 });
+
+const MUSICXML = `<?xml version="1.0"?>
+<score-partwise version="3.1">
+  <part-list><score-part id="P1"><part-name>Flute</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+  </measure></part>
+</score-partwise>`;
+
+test('imports MusicXML into alphaTex, and Undo brings the note back', async ({ page }) => {
+  const plugin = await openHost(page, { text: 'X:1\nK:C\nCDEF|]\n' });
+  await expect(plugin.locator('.render-target svg').first()).toBeVisible();
+
+  await plugin.getByRole('menuitem', { name: 'File' }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await plugin.getByRole('menuitem', { name: 'Import into alphaTex…' }).click();
+  await (
+    await chooser
+  ).setFiles({
+    name: 'flute.musicxml',
+    mimeType: 'application/xml',
+    buffer: Buffer.from(MUSICXML),
+  });
+
+  await plugin.getByRole('button', { name: 'Replace' }).click();
+  await expect.poll(() => lastSaved(page)).toContain('\\track ("Flute"');
+  await expect(plugin.getByRole('combobox', { name: 'Notation' })).toHaveValue('alphatex');
+  await expect(rendering(plugin).first()).toBeVisible();
+
+  await plugin.locator('.cm-content').click();
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => lastSaved(page)).toBe('X:1\nK:C\nCDEF|]\n');
+});
+
+test('says why a file cannot be imported', async ({ page }) => {
+  const plugin = await openHost(page, { text: '' });
+  await plugin.getByRole('menuitem', { name: 'File' }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await plugin.getByRole('menuitem', { name: 'Import into alphaTex…' }).click();
+  await (
+    await chooser
+  ).setFiles({ name: 'notes.xml', mimeType: 'text/plain', buffer: Buffer.from('hello') });
+
+  await expect(plugin.getByRole('alert')).toContainText('Import failed');
+  expect(await hostLogs(page, 'save-items')).toEqual([]);
+});
+
+test('prints the score alone, black on white', async ({ page }) => {
+  const plugin = await openHost(page, { text: EXAMPLE });
+  await expect(rendering(plugin).first()).toBeVisible();
+  await plugin.locator('body').evaluate(() => {
+    window.printed = 0;
+    window.print = () => window.printed++;
+  });
+
+  await plugin.getByRole('menuitem', { name: 'File' }).click();
+  await plugin.getByRole('menuitem', { name: 'Print or PDF' }).click();
+
+  await expect.poll(() => plugin.locator('body').evaluate(() => window.printed)).toBe(1);
+  const sheet = plugin.locator('.print-sheet img');
+  expect(await sheet.evaluate((img) => img.naturalWidth)).toBeGreaterThan(100);
+  await page.emulateMedia({ media: 'print' });
+  await expect(sheet).toBeVisible();
+  await expect(plugin.locator('.panes')).toBeHidden();
+});

@@ -194,6 +194,10 @@ export interface Engine {
   emit(cmd: Cmd, ctx: CursorCtx): Edit;
   /** The source tidied without changing the music. */
   format?(src: string): string;
+  /** File extensions importFile reads, with their dot. */
+  importTypes?: string[];
+  /** A score file written in this notation. */
+  importFile?(data: Uint8Array): Promise<string>;
   /** Loads the renderer chunk and draws into el. */
   mount(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance>;
   tools(): ToolDef[];

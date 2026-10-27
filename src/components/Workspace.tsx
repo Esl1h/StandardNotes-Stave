@@ -63,7 +63,15 @@ const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5];
 const STOPPED: PlayerState = { playing: false, speed: 1, loop: false };
 const NO_ERRORS: SourceError[] = [];
 
-type DialogName = 'cheatsheet' | 'shortcuts' | 'about' | { switchTo: string };
+type DialogName =
+  | 'cheatsheet'
+  | 'shortcuts'
+  | 'about'
+  | { switchTo: string }
+  | { replaceWith: { engine: Engine; text: string; file: string } };
+
+// Imports are read in the page; larger files are not scores worth editing as text.
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const ctrl = isMac ? '⌘' : 'Ctrl+';
@@ -91,8 +99,12 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
   // With the bars hidden (phones), the tools open in a drawer at the bottom.
   const [drawer, setDrawer] = useState(false);
   // What last failed on this instance (playback, export), shown above the panes.
-  const [failure, setFailure] = useState<{ instance: EngineInstance; message: string }>();
+  const [failure, setFailure] = useState<{ instance: EngineInstance | null; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
+  const importRef = useRef<HTMLInputElement | null>(null);
+  const [importer, setImporter] = useState<Engine>();
+  // The rendering as an SVG image, shown only on paper while printing.
+  const [printSheet, setPrintSheet] = useState<string>();
 
   const engine: Engine | undefined = useMemo(() => {
     const chosen = override?.epoch === epoch ? engineById(override.id) : undefined;
@@ -166,6 +178,40 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     setPref('defaultEngine', next.id);
     onTextChange(text);
   };
+
+  const importFile = async (into: Engine, file: File) => {
+    setFailure(undefined);
+    try {
+      if (file.size > MAX_IMPORT_BYTES) {
+        throw new Error(`${file.name} is larger than ${MAX_IMPORT_BYTES / 1024 / 1024} MB.`);
+      }
+      const text = await into.importFile!(new Uint8Array(await file.arrayBuffer()));
+      if (empty) startWith(into, text);
+      else setDialog({ replaceWith: { engine: into, text, file: file.name } });
+    } catch (error) {
+      setFailure({ instance, message: `Import failed: ${(error as Error).message}` });
+    }
+  };
+
+  const print = async () => {
+    if (!instance?.export) return;
+    setFailure(undefined);
+    try {
+      setPrintSheet(URL.createObjectURL(await instance.export('svg')));
+    } catch (error) {
+      setFailure({ instance, message: `Printing failed: ${(error as Error).message}` });
+    }
+  };
+
+  useEffect(() => {
+    if (!printSheet) return;
+    const done = () => setPrintSheet(undefined);
+    window.addEventListener('afterprint', done);
+    return () => {
+      window.removeEventListener('afterprint', done);
+      URL.revokeObjectURL(printSheet);
+    };
+  }, [printSheet]);
 
   const chooseEngine = (id: string) => {
     const next = engineById(id);
@@ -277,6 +323,18 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           disabled: !editable || !empty,
           onSelect: () => startWith(each, each.example?.()),
         })),
+        ...ENGINES.filter((each) => each.importFile).map((each) => ({
+          label: `Import into ${each.label}…`,
+          disabled: !editable,
+          onSelect: () => {
+            setImporter(each);
+            const input = importRef.current;
+            if (!input) return;
+            input.accept = each.importTypes?.join(',') ?? '';
+            input.value = '';
+            input.click();
+          },
+        })),
         'separator',
         {
           label: 'Download source',
@@ -289,6 +347,9 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           shortcut: index === 0 ? `${ctrl}Shift+E` : undefined,
           onSelect: () => void exportAs(fmt),
         })),
+        ...(instance?.exportFormats?.includes('svg')
+          ? [{ label: 'Print or PDF', onSelect: () => void print() }]
+          : []),
       ],
     },
     {
@@ -790,7 +851,63 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           </p>
         </Dialog>
       )}
-      {typeof dialog === 'object' && dialog && (
+      <input
+        ref={importRef}
+        type="file"
+        hidden
+        aria-hidden="true"
+        tabIndex={-1}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file && importer) void importFile(importer, file);
+        }}
+      />
+      {printSheet && (
+        <div className="print-sheet">
+          <img src={printSheet} alt="" onLoad={() => window.print()} />
+        </div>
+      )}
+      {typeof dialog === 'object' && dialog && 'replaceWith' in dialog && (
+        <Dialog
+          title={`Replace the note with ${dialog.replaceWith.file}?`}
+          onClose={() => setDialog(null)}
+          actions={
+            <>
+              <button type="button" onClick={() => setDialog(null)} data-autofocus>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  const view = viewRef.current;
+                  const { engine: into, text } = dialog.replaceWith;
+                  setPref('defaultEngine', into.id);
+                  // Through the editor, so Undo brings the note back.
+                  if (view) {
+                    const current = view.state.doc.toString();
+                    view.dispatch({
+                      changes: changedRange(current, text),
+                      userEvent: 'input.import',
+                    });
+                  } else {
+                    onTextChange(text);
+                  }
+                  setDialog(null);
+                }}
+              >
+                Replace
+              </button>
+            </>
+          }
+        >
+          <p>
+            The file becomes the text of this note, in {dialog.replaceWith.engine.label}. What the
+            note holds now is replaced; Undo in the source brings it back.
+          </p>
+        </Dialog>
+      )}
+      {typeof dialog === 'object' && dialog && 'switchTo' in dialog && (
         <Dialog
           title={`Switch to ${engineById(dialog.switchTo)?.label}?`}
           onClose={() => setDialog(null)}
