@@ -38,18 +38,15 @@ function Toolbar({ tools, editable, onTool, trailing }: ToolbarProps) {
                 type="button"
                 key={tool.id}
                 className="tool"
-                aria-label={tool.label}
+                // A name that holds the visible text, for speech input (WCAG 2.5.3).
+                aria-label={tool.icon || !tool.glyph ? tool.label : `${tool.glyph} ${tool.label}`}
                 title={tool.shortcut ? `${tool.label} (${tool.shortcut})` : tool.label}
                 disabled={!editable}
                 // Keep the focus (and the selection) in the source editor.
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onTool(tool.cmd)}
               >
-                {tool.icon ? (
-                  <MusicIcon name={tool.icon} />
-                ) : (
-                  <span aria-hidden="true">{tool.glyph}</span>
-                )}
+                {tool.icon ? <MusicIcon name={tool.icon} /> : <span>{tool.glyph}</span>}
               </button>
             ))}
           </div>
