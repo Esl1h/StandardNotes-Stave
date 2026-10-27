@@ -169,6 +169,10 @@ export const alphaTexEngine: Engine = {
   example: () => EXAMPLE,
   emit: emitAlphaTex,
   format: formatAlphaTex,
+  importTypes: ['.musicxml', '.xml', '.mxl', '.gp', '.gpx', '.gp5', '.gp4', '.gp3', '.capx'],
+  async importFile(data) {
+    return (await import('./import')).toAlphaTex(data);
+  },
   async mount(el, opts) {
     const { mountAlphaTex } = await import('./renderer');
     return mountAlphaTex(el, opts);
