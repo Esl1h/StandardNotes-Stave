@@ -4,7 +4,7 @@ Date: 2026-10-26
 
 ## Status
 
-Accepted
+Accepted. Its Verovio renderer is dropped by [record 16](0016-no-verovio-renderer-for-abc.md).
 
 ## Context
 

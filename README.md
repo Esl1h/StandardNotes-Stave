@@ -193,7 +193,7 @@ The `Release` workflow fails unless the tag matches every version file. It runs 
 1. ABC with abcjs: rendering, toolbar, playback, click to source, export (done)
 2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export (done)
 3. Engine detection and switching, the full menu, mobile polish (done)
-4. Verovio as a higher quality renderer for ABC
+4. Verovio as a higher quality renderer for ABC: measured and left out until it reads ABC with several voices ([record 16](docs/adr/0016-no-verovio-renderer-for-abc.md))
 5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF
 6. ChordPro
 
