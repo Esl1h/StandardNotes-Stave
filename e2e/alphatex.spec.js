@@ -14,10 +14,23 @@ const lastSaved = async (page) =>
 
 const rendering = (plugin) => plugin.locator('.render-target .at-surface svg');
 
+test('an empty note opens the alphaTex example', async ({ page }) => {
+  const plugin = await openHost(page, { text: '' });
+
+  await plugin.getByRole('button', { name: 'alphaTex example' }).click();
+
+  await expect(rendering(plugin).first()).toBeVisible();
+  await expect.poll(() => lastSaved(page)).toMatch(/^\\title "Morning on the Stave"\n/);
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  for (const track of ['Melody', 'Rhythm', 'Bass']) {
+    await expect(plugin.getByRole('menuitemcheckbox', { name: `Mute ${track}` })).toBeVisible();
+  }
+});
+
 test('an empty note starts from the alphaTex template', async ({ page }) => {
   const plugin = await openHost(page, { text: '' });
 
-  await plugin.getByRole('button', { name: 'alphaTex' }).click();
+  await plugin.getByRole('button', { name: 'alphaTex', exact: true }).click();
 
   await expect(rendering(plugin).first()).toBeVisible();
   await expect.poll(() => lastSaved(page)).toMatch(/^\\title "Untitled"\n/);

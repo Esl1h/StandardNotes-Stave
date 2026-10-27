@@ -1,4 +1,5 @@
 import { type CheatsheetSection, type Engine, type ToolDef } from '../../core/engine';
+import EXAMPLE from '../../../examples/alphatex.atex?raw';
 import { alphaTexLanguage } from './language';
 import { alphaTexTitle, emitAlphaTex, isAlphaTex } from './syntax';
 
@@ -165,6 +166,7 @@ export const alphaTexEngine: Engine = {
   detect: isAlphaTex,
   title: alphaTexTitle,
   template: () => TEMPLATE,
+  example: () => EXAMPLE,
   emit: emitAlphaTex,
   async mount(el, opts) {
     const { mountAlphaTex } = await import('./renderer');

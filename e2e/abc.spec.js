@@ -10,7 +10,7 @@ const lastSaved = async (page) =>
 test('an empty note starts from the ABC template', async ({ page }) => {
   const plugin = await openHost(page, { text: '' });
 
-  await plugin.getByRole('button', { name: 'ABC' }).click();
+  await plugin.getByRole('button', { name: 'ABC', exact: true }).click();
 
   await expect(plugin.locator('.render-target svg')).toBeVisible();
   await expect.poll(() => lastSaved(page)).toMatch(/^X:1\nT:Untitled\n/);

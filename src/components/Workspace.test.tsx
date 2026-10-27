@@ -16,6 +16,7 @@ const { one, two } = vi.hoisted(() => {
     detect: (src: string) => src.startsWith(prefix),
     title: () => undefined,
     template: () => `${prefix} template`,
+    example: () => `${prefix} example`,
     emit: (cmd: { kind: string; dur?: number }, ctx: { from: number; to: number }) => ({
       from: ctx.from,
       to: ctx.to,
@@ -72,6 +73,26 @@ test('offers the engines for an empty note and starts from a template', () => {
 
   expect(onTextChange).toHaveBeenCalledWith('2: template');
   expect(window.localStorage.getItem('standardnotes-stave-default-engine')).toBe('two');
+});
+
+test('an empty note opens an example', () => {
+  const { onTextChange } = setup('');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Two example' }));
+  expect(onTextChange).toHaveBeenCalledWith('2: example');
+  fireEvent.click(screen.getByRole('menuitem', { name: 'File' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Open the One example' }));
+  expect(onTextChange).toHaveBeenLastCalledWith('1: example');
+});
+
+test('a written note does not offer to open an example', () => {
+  setup('1: notes');
+
+  fireEvent.click(screen.getByRole('menuitem', { name: 'File' }));
+  expect(screen.getByRole('menuitem', { name: 'Open the Two example' })).toHaveAttribute(
+    'aria-disabled',
+    'true'
+  );
 });
 
 test('shows the detected engine and mounts its renderer', async () => {

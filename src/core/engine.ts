@@ -173,6 +173,8 @@ export interface Engine {
   /** The piece's title, for the notes list preview. */
   title(src: string): string | undefined;
   template(): string;
+  /** A finished piece that shows what the notation can do. */
+  example?(): string;
   emit(cmd: Cmd, ctx: CursorCtx): Edit;
   /** Loads the renderer chunk and draws into el. */
   mount(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance>;

@@ -150,9 +150,9 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     [instance, editable]
   );
 
-  const startWith = (next: Engine) => {
+  const startWith = (next: Engine, text = next.template()) => {
     setPref('defaultEngine', next.id);
-    onTextChange(next.template());
+    onTextChange(text);
   };
 
   const chooseEngine = (id: string) => {
@@ -258,6 +258,12 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           label: `New ${each.label} from template`,
           disabled: !editable,
           onSelect: () => (empty ? startWith(each) : setDialog({ switchTo: each.id })),
+        })),
+        // An example replaces the text, so only an empty note offers it.
+        ...ENGINES.filter((each) => each.example).map((each) => ({
+          label: `Open the ${each.label} example`,
+          disabled: !editable || !empty,
+          onSelect: () => startWith(each, each.example?.()),
         })),
         'separator',
         {
@@ -526,6 +532,14 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
               {each.label}
             </button>
           ))}
+          <p>Or open an example:</p>
+          <div className="start-examples">
+            {ENGINES.filter((each) => each.example).map((each) => (
+              <button type="button" key={each.id} onClick={() => startWith(each, each.example?.())}>
+                {each.label} example
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <RenderPane
