@@ -4,6 +4,27 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-10-27
+
+### Added
+
+- **alphatex:** Import score files into alphaTex
+- Print the score or save it as PDF
+
+### Fixed
+
+- **csp:** Default to the plugin's own origin
+- **a11y:** Give secondary text AA contrast
+- **a11y:** Name text tools by what they show
+- **a11y:** Let the keyboard scroll every pane
+
+### Documentation
+
+- Record why Verovio is left out
+- List import and printing
+- Describe 1.0 and the community export
+- Refresh the screenshots
+
 ## [0.4.0] - 2026-10-27
 
 ### Added
