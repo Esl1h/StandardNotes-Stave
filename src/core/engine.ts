@@ -51,12 +51,16 @@ export interface ThemeColors {
   danger: string;
 }
 
+/** One system after another down the page, or one long system across it. */
+export type Layout = 'page' | 'horizontal';
+
 export interface RenderOpts {
   theme: ThemeColors;
   /** 1 is the engine's natural size. */
   zoom: number;
   /** One of the instance's views, as last chosen. */
   view?: string;
+  layout?: Layout;
 }
 
 export interface SourceError {
@@ -90,6 +94,8 @@ export interface PlayerState {
   metronome?: boolean;
   /** A bar of clicks before the music, when the player has one. */
   countIn?: boolean;
+  /** The source range playback is limited to, until the source changes. */
+  range?: [number, number];
 }
 
 export interface Player {
@@ -102,6 +108,8 @@ export interface Player {
   setTrackSolo?(index: number, solo: boolean): void;
   setMetronome?(on: boolean): void;
   setCountIn?(on: boolean): void;
+  /** Plays only the music written in a source range; null plays it all. */
+  setRange?(range: [number, number] | null): void;
   onStateChange(cb: (state: PlayerState) => void): void;
 }
 
@@ -130,6 +138,8 @@ export interface EngineInstance {
   /** The ways this instance can show the music; the first is the default. */
   views?: ViewDef[];
   setView?(id: string): void;
+  /** Present when the renderer can lay the music out in one long system. */
+  setLayout?(layout: Layout): void;
   destroy(): void;
 }
 
@@ -182,6 +192,8 @@ export interface Engine {
   /** A finished piece that shows what the notation can do. */
   example?(): string;
   emit(cmd: Cmd, ctx: CursorCtx): Edit;
+  /** The source tidied without changing the music. */
+  format?(src: string): string;
   /** Loads the renderer chunk and draws into el. */
   mount(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance>;
   tools(): ToolDef[];

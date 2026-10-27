@@ -2,6 +2,7 @@ import * as alphaTab from '@coderline/alphatab';
 import {
   type EngineInstance,
   type ExportFormat,
+  type Layout,
   type Player,
   type PlayerState,
   type RenderOpts,
@@ -37,6 +38,11 @@ const PROFILES: Record<string, alphaTab.StaveProfile> = {
   both: alphaTab.StaveProfile.Default,
   score: alphaTab.StaveProfile.Score,
   tab: alphaTab.StaveProfile.Tab,
+};
+
+const LAYOUTS: Record<Layout, alphaTab.LayoutMode> = {
+  page: alphaTab.LayoutMode.Page,
+  horizontal: alphaTab.LayoutMode.Horizontal,
 };
 
 const url = (path: string) => new URL(path, document.baseURI).href;
@@ -134,7 +140,10 @@ class AlphaTexPlayer implements Player {
   };
   private listeners: Array<(state: PlayerState) => void> = [];
 
-  constructor(private api: alphaTab.AlphaTabApi) {
+  constructor(
+    private api: alphaTab.AlphaTabApi,
+    private beats: () => Map<alphaTab.model.Beat, [number, number]>
+  ) {
     api.playerStateChanged.on((event) => this.emit({ playing: event.state === 1 }));
     api.playerFinished.on(() => {
       if (!this.state.loop) this.emit({ playing: false });
@@ -156,7 +165,9 @@ class AlphaTexPlayer implements Player {
     this.emit({
       playing: false,
       tracks: score.tracks.map((track) => ({ name: track.name, muted: false, solo: false })),
+      range: undefined,
     });
+    this.applyRange();
   }
 
   async play() {
@@ -186,6 +197,7 @@ class AlphaTexPlayer implements Player {
     api.playbackSpeed = this.state.speed;
     api.isLooping = this.state.loop;
     this.applyClicks();
+    this.applyRange();
     if (!api.play()) {
       this.emit({ playing: false });
       throw new Error('The player is not ready.');
@@ -216,6 +228,40 @@ class AlphaTexPlayer implements Player {
     if (!this.api.player) return;
     this.api.metronomeVolume = this.state.metronome ? 1 : 0;
     this.api.countInVolume = this.state.countIn ? 1 : 0;
+  }
+
+  setRange(range: [number, number] | null) {
+    this.emit({ range: range ?? undefined });
+    this.applyRange();
+  }
+
+  /**
+   * Marks the beats written in the range, and once the player has its MIDI
+   * ticks, limits playback to them.
+   */
+  private applyRange() {
+    const { api } = this;
+    const range = this.state.range;
+    const beats = range
+      ? [...this.beats()].filter(([, [start, end]]) => start < range[1] && end > range[0])
+      : [];
+    if (!beats.length) {
+      api.clearPlaybackRangeHighlight();
+      if (api.player && api.playbackRange) api.playbackRange = null;
+      return;
+    }
+    beats.sort(([, a], [, b]) => a[0] - b[0]);
+    api.highlightPlaybackRange(beats[0][0], beats[beats.length - 1][0]);
+    const cache = api.tickCache;
+    if (!api.player || !cache) return;
+    const ticks = beats.map(([beat]) => cache.getBeatStart(beat));
+    const ends = beats.map(([beat], i) => ticks[i] + beat.playbackDuration);
+    const startTick = Math.min(...ticks);
+    const endTick = Math.max(...ends);
+    // Setting it moves playback to its start, which a resume must not do.
+    const current = api.playbackRange;
+    if (current?.startTick === startTick && current.endTick === endTick) return;
+    api.playbackRange = { startTick, endTick };
   }
 
   setMetronome(metronome: boolean) {
@@ -334,7 +380,7 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       scale: opts.zoom * BASE_SCALE,
       // The pane has a padding of its own.
       padding: [8, 8],
-      layoutMode: alphaTab.LayoutMode.Page,
+      layoutMode: LAYOUTS[opts.layout ?? 'page'],
       staveProfile: PROFILES[view],
       resources: resources(theme),
     },
@@ -351,7 +397,7 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       scrollMode: alphaTab.ScrollMode.Off,
     },
   });
-  const player = new AlphaTexPlayer(api);
+  const player = new AlphaTexPlayer(api, () => parsed.ranges);
 
   let rendered: (() => void) | undefined;
   api.postRenderFinished.on(() => rendered?.());
@@ -454,6 +500,12 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       if (PROFILES[id] === undefined) return;
       view = id;
       api.settings.display.staveProfile = PROFILES[view];
+      api.updateSettings();
+      if (api.score) void draw();
+    },
+    setLayout(layout) {
+      if (api.settings.display.layoutMode === LAYOUTS[layout]) return;
+      api.settings.display.layoutMode = LAYOUTS[layout];
       api.updateSettings();
       if (api.score) void draw();
     },

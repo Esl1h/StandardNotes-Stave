@@ -242,6 +242,17 @@ select {
   padding: 2px 4px;
 }
 
+.insert-drawer {
+  border-top: 1px solid var(--sn-stylekit-border-color);
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+
+  .toolbar {
+    border-bottom: none;
+  }
+}
+
 .toolbar-show {
   @extend %ghost-button;
   align-self: center;
@@ -484,6 +495,10 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
 
 .render-target svg {
   display: block;
+}
+
+.render-target.layout-horizontal {
+  width: max-content !important;
 }
 
 // The note at the cursor and the notes sounding, in the theme's accent.

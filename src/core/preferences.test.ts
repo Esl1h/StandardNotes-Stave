@@ -30,6 +30,7 @@ test('falls back to the defaults when nothing is stored', () => {
     zoom: 1,
     defaultEngine: '',
     renderView: '',
+    layout: 'page',
   });
 });
 
@@ -53,9 +54,12 @@ test('writes to the component data and localStorage', () => {
 });
 
 test('ignores values it does not know', () => {
-  setPreferenceStore(memoryStore({ view: 'gallery', zoom: 'big', toolbar: 'maybe' }));
+  setPreferenceStore(
+    memoryStore({ view: 'gallery', zoom: 'big', toolbar: 'maybe', layout: 'spiral' })
+  );
 
   expect(readPreference('view')).toBe('split');
+  expect(readPreference('layout')).toBe('page');
   expect(readPreference('zoom')).toBe(1);
   expect(readPreference('toolbar')).toBe(true);
 });

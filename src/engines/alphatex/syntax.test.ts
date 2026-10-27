@@ -1,11 +1,13 @@
 import * as alphaTab from '@coderline/alphatab';
 import fc from 'fast-check';
+import { readFileSync } from 'node:fs';
 import { type Cmd, type Dur, type Edit } from '../../core/engine';
 import {
   alphaTexTitle,
   barStart,
   beatBefore,
   emitAlphaTex,
+  formatAlphaTex,
   fretString,
   isAlphaTex,
   isPitchedStaff,
@@ -317,6 +319,62 @@ describe('transposition', () => {
           expect(transposeAlphaTex(transposeAlphaTex(src, semitones), -semitones)).toBe(src);
         }
       )
+    );
+  });
+});
+
+describe('formatting', () => {
+  test('spaces tokens and bars, and keeps strings and comments', () => {
+    const src =
+      '\\title  "A  b|c"\r\n\n\n  0.3.4   2.3|3.3  5.3 |0.3 // x  | y\n/* a  |\n b */ 1.2|2.2   \n\n';
+    expect(formatAlphaTex(src)).toBe(
+      '\\title "A  b|c"\n\n  0.3.4 2.3 | 3.3 5.3 | 0.3 // x  | y\n/* a  |\n b */ 1.2 | 2.2\n'
+    );
+  });
+
+  /** The music alphaTab reads: every beat's duration and notes. */
+  function music(src: string): string {
+    const importer = new alphaTab.importer.AlphaTexImporter();
+    importer.logErrors = false;
+    importer.initFromString(src, new alphaTab.Settings());
+    const score = importer.readScore();
+    return JSON.stringify(
+      score.tracks.map((track) =>
+        track.staves.map((staff) =>
+          staff.bars.map((bar) =>
+            bar.voices.map((voice) =>
+              voice.beats.map((beat) => [
+                beat.duration,
+                beat.dots,
+                beat.isRest,
+                beat.notes.map((note) => [note.fret, note.string, note.octave, note.tone]),
+              ])
+            )
+          )
+        )
+      )
+    );
+  }
+
+  test('keeps the music of the example and is stable', () => {
+    const example = readFileSync('examples/alphatex.atex', 'utf8');
+    const once = formatAlphaTex(example);
+    expect(music(once)).toBe(music(example));
+    expect(problems(once)).toEqual([]);
+    expect(formatAlphaTex(once)).toBe(once);
+  });
+
+  test('keeps the music of any spacing', () => {
+    const token = fc.constantFrom('0.3.4', '2.3', 'r', '|', '(0.1 2.2).8', '3.3{h}', ':8 5.2');
+    const space = fc.constantFrom(' ', '  ', '\t', '\n', ' \n  ');
+    fc.assert(
+      fc.property(fc.array(fc.tuple(token, space), { maxLength: 20 }), (parts) => {
+        const src = `${HEADER}0.3.4 ${parts.map(([t, s]) => t + s).join('')}`;
+        const formatted = formatAlphaTex(src);
+        expect(music(formatted)).toBe(music(src));
+        expect(formatAlphaTex(formatted)).toBe(formatted);
+      }),
+      { numRuns: 200 }
     );
   });
 });

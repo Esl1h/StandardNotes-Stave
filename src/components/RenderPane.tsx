@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   type Engine,
   type EngineInstance,
+  type Layout,
   type SourceError,
   type ThemeColors,
 } from '../core/engine';
@@ -16,6 +17,7 @@ interface RenderPaneProps {
   zoom: number;
   /** The engine view last chosen (score, tab), when the engine has views. */
   view?: string;
+  layout: Layout;
   /** Source range to highlight in the drawing (the cursor or selection). */
   highlight?: [number, number];
   onErrors: (errors: SourceError[]) => void;
@@ -30,7 +32,7 @@ interface RenderPaneProps {
  * position, and a failing render reports errors instead of breaking the pane.
  */
 function RenderPane(props: RenderPaneProps) {
-  const { engine, src, theme, zoom, view, highlight } = props;
+  const { engine, src, theme, zoom, view, layout, highlight } = props;
   const paneRef = useRef<HTMLDivElement | null>(null);
   const targetRef = useRef<HTMLDivElement | null>(null);
   const [instance, setInstance] = useState<EngineInstance | null>(null);
@@ -39,7 +41,7 @@ function RenderPane(props: RenderPaneProps) {
   useEffect(() => {
     callbacks.current = props;
   });
-  const firstOpts = useRef({ theme, zoom, view });
+  const firstOpts = useRef({ theme, zoom, view, layout });
 
   useEffect(() => {
     if (!engine || !targetRef.current) {
@@ -116,6 +118,10 @@ function RenderPane(props: RenderPaneProps) {
   useEffect(() => {
     if (view) instance?.setView?.(view);
   }, [instance, view]);
+
+  useEffect(() => {
+    instance?.setLayout?.(layout);
+  }, [instance, layout]);
 
   useEffect(() => {
     if (instance && highlight) {

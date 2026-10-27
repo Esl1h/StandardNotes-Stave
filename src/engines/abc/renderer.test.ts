@@ -1,5 +1,5 @@
 import abcjs from 'abcjs';
-import { clickPattern, mountAbc, parseWarnings } from './renderer';
+import { clickPattern, mountAbc, parseWarnings, rangeTimes } from './renderer';
 
 const theme = {
   foreground: '#111111',
@@ -190,4 +190,31 @@ test('redraws with a new theme and zoom', async () => {
   instance.setZoom!(1.5);
 
   expect(el.innerHTML).toContain('#abcdef');
+});
+
+test('lays out one system across, and pages again', async () => {
+  const el = document.createElement('div');
+  const instance = await mountAbc(el, { theme, zoom: 1, layout: 'horizontal' });
+  // Two sections around a text line, each one line; on a page, two each.
+  await instance.render('X:1\nL:1/4\nK:C\nCDEF|\nGABc|\n%%text a line of text\nCDEF|\nGABc|]\n');
+  expect(el.querySelector('.abcjs-l2')).not.toBeNull();
+  expect(el.querySelector('.abcjs-l3')).toBeNull();
+  expect(el.classList.contains('layout-horizontal')).toBe(true);
+
+  instance.setLayout!('page');
+  expect(el.querySelector('.abcjs-l4')).not.toBeNull();
+  expect(el.classList.contains('layout-horizontal')).toBe(false);
+});
+
+test('times the notes written in a source range', () => {
+  const el = document.createElement('div');
+  // A quarter note lasts 500 ms at this tempo.
+  const src = 'X:1\nL:1/4\nQ:1/4=120\nK:C\nCDEF|GABc|]\n';
+  const [tune] = abcjs.renderAbc(el, src, { add_classes: true });
+  const timings = new abcjs.TimingCallbacks(tune, {}).noteTimings;
+  const at = (text: string) => src.indexOf(text);
+
+  expect(rangeTimes(timings, [at('EF'), at('F|') + 1])).toEqual({ start: 1000, end: 2000 });
+  expect(rangeTimes(timings, [at('c|'), at('c|') + 1])).toEqual({ start: 3500, end: 4000 });
+  expect(rangeTimes(timings, [0, at('CDEF')])).toBeUndefined();
 });

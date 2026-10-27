@@ -6,6 +6,7 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronUp,
+  Music,
   Pause,
   Play,
   Repeat,
@@ -87,6 +88,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     state: STOPPED,
   });
   const [dialog, setDialog] = useState<DialogName | null>(null);
+  // With the bars hidden (phones), the tools open in a drawer at the bottom.
+  const [drawer, setDrawer] = useState(false);
   // What last failed on this instance (playback, export), shown above the panes.
   const [failure, setFailure] = useState<{ instance: EngineInstance; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
@@ -148,6 +151,16 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     },
     [instance, editable]
   );
+
+  const formatSource = () => {
+    const view = viewRef.current;
+    if (!engine?.format || !view || !editable) return;
+    const current = view.state.doc.toString();
+    const next = engine.format(current);
+    if (next !== current) {
+      view.dispatch({ changes: changedRange(current, next), userEvent: 'input.format' });
+    }
+  };
 
   const startWith = (next: Engine, text = next.template()) => {
     setPref('defaultEngine', next.id);
@@ -307,6 +320,11 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           disabled: !instance?.transpose || !editable,
           onSelect: () => void transpose(-1),
         },
+        {
+          label: 'Format source',
+          disabled: !engine?.format || !editable,
+          onSelect: formatSource,
+        },
         'separator',
         {
           label: 'Insert title',
@@ -353,6 +371,15 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
               ),
             ]
           : []),
+        ...(instance?.setLayout
+          ? [
+              'separator' as const,
+              check('Page layout', prefs.layout === 'page', () => setPref('layout', 'page')),
+              check('Horizontal layout', prefs.layout === 'horizontal', () =>
+                setPref('layout', 'horizontal')
+              ),
+            ]
+          : []),
         'separator',
         check('Toolbar', prefs.toolbar, () => setPref('toolbar', !prefs.toolbar)),
         {
@@ -374,6 +401,21 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         },
         { label: 'Stop', disabled: !instance?.player, onSelect: () => instance?.player?.stop() },
         check('Loop', player.loop, () => instance?.player?.setLoop(!player.loop)),
+        ...(instance?.player?.setRange
+          ? [
+              {
+                label: 'Loop the selection',
+                checked: !!player.range,
+                disabled: !player.range && (!selection || selection[0] === selection[1]),
+                onSelect: () => {
+                  const active = instance.player;
+                  if (player.range || !selection) return active?.setRange?.(null);
+                  active?.setRange?.(selection);
+                  active?.setLoop(true);
+                },
+              },
+            ]
+          : []),
         ...(player.metronome !== undefined
           ? [
               check('Metronome', player.metronome, () =>
@@ -561,6 +603,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           theme={theme}
           zoom={prefs.zoom}
           view={prefs.renderView}
+          layout={prefs.layout}
           highlight={selection}
           onErrors={(list) => setReported({ engine, errors: list })}
           onInstance={setInstance}
@@ -613,6 +656,19 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         <div className="menu-bar collapsed">
           {playback}
           <div className="spacer" />
+          {engine && editable && (
+            <button
+              type="button"
+              className={`icon-button${drawer ? ' active' : ''}`}
+              aria-label="Insert"
+              aria-expanded={drawer}
+              aria-controls="insert-drawer"
+              title="Insert notes and symbols"
+              onClick={() => setDrawer(!drawer)}
+            >
+              <Music size={16} />
+            </button>
+          )}
           {engineSelect}
           <button
             type="button"
@@ -663,6 +719,29 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         </p>
       )}
       <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>
+      {drawer && !prefs.menuBar && engine && editable && (
+        <div className="insert-drawer" id="insert-drawer" role="region" aria-label="Insert">
+          <Toolbar
+            tools={engine.tools()}
+            editable={editable}
+            onTool={applyCmd}
+            trailing={
+              <>
+                {transposeTools}
+                <button
+                  type="button"
+                  className="tool"
+                  aria-label="Close the drawer"
+                  title="Close the drawer"
+                  onClick={() => setDrawer(false)}
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </>
+            }
+          />
+        </div>
+      )}
       {dialog === 'cheatsheet' && engine && (
         <Dialog title={`${engine.label} cheat sheet`} onClose={() => setDialog(null)}>
           {engine.cheatsheet().map((section) => (

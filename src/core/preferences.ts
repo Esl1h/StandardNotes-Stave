@@ -7,6 +7,8 @@
  * to the defaults, so a value from another version never breaks the editor.
  */
 
+import { type Layout } from './engine';
+
 export type View = 'split' | 'source' | 'render';
 /** Side by side or one above the other. */
 export type Orientation = 'side' | 'stacked';
@@ -29,10 +31,12 @@ export interface Preferences {
   defaultEngine: string;
   /** How the rendering shows the music (score, tab), as the engine names it. */
   renderView: string;
+  layout: Layout;
 }
 
 const VIEWS = ['split', 'source', 'render'] as const;
 const ORIENTATIONS = ['side', 'stacked'] as const;
+const LAYOUTS = ['page', 'horizontal'] as const;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2;
 
@@ -107,6 +111,7 @@ const codecs = {
     parse: (raw: string | null) => raw ?? '',
     format: (value: string) => value,
   },
+  layout: oneOf(LAYOUTS, 'page'),
 } satisfies {
   [K in keyof Preferences]: {
     parse: (raw: string | null) => Preferences[K];
@@ -123,6 +128,7 @@ const KEYS: Record<keyof Preferences, string> = {
   zoom: 'zoom',
   defaultEngine: 'default-engine',
   renderView: 'render-view',
+  layout: 'layout',
 };
 
 export function readPreference<K extends keyof Preferences>(key: K): Preferences[K] {

@@ -45,13 +45,16 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Each notation comes with a short template for a new piece and a full example (File menu, or the buttons of an empty note): the same tune in ABC and in alphaTex, showing what each can do
 
 - Source and rendering side by side, stacked, or one at a time, with the panes in either order
+- The music laid out in pages, or in one long system that scrolls across (View menu)
+- Loop the selection: playback keeps to the music written in the selected source (Play menu)
+- Format source: one undoable edit that tidies blank lines and spacing without changing the music (Edit menu)
 - A menu bar (File, Edit, View, Play, Help) and a contextual toolbar, both collapsible, with the notation of the note always visible
 - Notation engines behind one interface: each engine detects its own text, offers a template and a cheat sheet, and turns toolbar actions into its syntax
 - Renderer errors shown inline in the source, with line and column
 - Keyboard shortcuts for durations, rests, bar lines, playback, transposition and the layout (Help, Keyboard shortcuts)
 - Every Standard Notes theme, through the theme variables only
 - Locked notes open read-only
-- Phones get collapsed bars and stacked panes
+- Phones get collapsed bars, stacked panes and a drawer with the toolbar's tools
 - Layout preferences are kept per editor in Standard Notes, never in the note
 
 ## Installation
@@ -189,7 +192,7 @@ The `Release` workflow fails unless the tag matches every version file. It runs 
 
 1. ABC with abcjs: rendering, toolbar, playback, click to source, export (done)
 2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export (done)
-3. Engine detection and switching, the full menu, mobile polish
+3. Engine detection and switching, the full menu, mobile polish (done)
 4. Verovio as a higher quality renderer for ABC
 5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF
 6. ChordPro

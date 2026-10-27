@@ -1,7 +1,13 @@
-import abcjs, { type MidiBuffer, type TimingCallbacks, type TuneObject } from 'abcjs';
+import abcjs, {
+  type MidiBuffer,
+  type NoteTimingEvent,
+  type TimingCallbacks,
+  type TuneObject,
+} from 'abcjs';
 import {
   type EngineInstance,
   type ExportFormat,
+  type Layout,
   type Player,
   type PlayerState,
   type RenderOpts,
@@ -22,6 +28,31 @@ const HIGHLIGHT = 'stave-highlight';
 const CLICK_ACCENT = 96;
 const CLICK = 91;
 const PLAYING = 'stave-playing';
+// About the width abcjs gives a bar on a page.
+const BAR_WIDTH = 150;
+
+const barsIn = (tune: TuneObject) =>
+  Math.max(
+    0,
+    ...tune.lines.flatMap((line) =>
+      (line.staff ?? []).flatMap((staff) =>
+        (staff.voices ?? []).map((voice) => voice.filter((el) => el.el_type === 'bar').length)
+      )
+    )
+  );
+
+/**
+ * abcjs options for one long system. lineBreaks lists, for each section of
+ * a tune (music between text lines), the bars to end a line on; none, and
+ * the section is one line. A section needs a line of source at least.
+ * abcjs fits the line in staffwidth, so it grows with the bars.
+ */
+function horizontal(src: string) {
+  // Typed as number[] in abcjs 6, read as one list per section.
+  const lineBreaks = src.split('\n').map(() => []) as unknown as number[];
+  const bars = Math.max(1, ...abcjs.parseOnly(src, { lineBreaks }).map(barsIn));
+  return { lineBreaks, staffwidth: bars * BAR_WIDTH };
+}
 
 /**
  * abcjs warnings as source errors. They read "Music Line:6:7: message:
@@ -76,6 +107,27 @@ export function clickPattern(beats: number): string {
   ].join(' ');
 }
 
+/**
+ * When the music written in a source range plays, in milliseconds from the
+ * start: from its first note to the next note after its last one, or the
+ * end. Undefined when the range holds no note.
+ */
+export function rangeTimes(
+  timings: NoteTimingEvent[],
+  [from, to]: [number, number]
+): { start: number; end: number } | undefined {
+  const inRange = (event: NoteTimingEvent) =>
+    (event.startCharArray ?? [event.startChar ?? -1]).some((char) => char >= from && char < to);
+  const events = timings.filter((event) => event.type === 'event');
+  const chosen = events.filter(inRange);
+  if (!chosen.length) return undefined;
+  const start = Math.min(...chosen.map((event) => event.milliseconds));
+  const last = Math.max(...chosen.map((event) => event.milliseconds));
+  const next = events.find((event) => event.milliseconds > last);
+  const end = next?.milliseconds ?? timings[timings.length - 1]?.milliseconds ?? last;
+  return { start, end };
+}
+
 class AbcPlayer implements Player {
   private synth: MidiBuffer | null = null;
   private timing: TimingCallbacks | null = null;
@@ -92,6 +144,8 @@ class AbcPlayer implements Player {
   private introTimer: ReturnType<typeof setTimeout> | undefined;
   private introEnds = 0;
   private introLeft = 0;
+  // The part of the tune a range plays, from rangeTimes.
+  private window: { start: number; end: number } | undefined;
 
   constructor(
     private tune: () => TuneObject | undefined,
@@ -138,7 +192,8 @@ class AbcPlayer implements Player {
             this.state.metronome || this.state.countIn
               ? clickPattern(tune.getMeterFraction().num)
               : '',
-          drumIntro: this.state.countIn ? 1 : 0,
+          // A range starts in the middle of the audio, after any intro.
+          drumIntro: this.state.countIn && !this.state.range ? 1 : 0,
           // Off after the intro: a count-in without the metronome.
           drumOff: !this.state.metronome,
           onEnded: () => this.ended(),
@@ -160,16 +215,29 @@ class AbcPlayer implements Player {
     this.timing = new abcjs.TimingCallbacks(tune, {
       qpm: tune.getBpm() * this.state.speed,
       eventCallback: (event) => {
+        if (this.window && event && event.milliseconds >= this.window.end) {
+          this.ended();
+          return undefined;
+        }
         this.cursor(event?.elements ?? []);
         return undefined;
       },
     });
+    this.window = this.state.range && rangeTimes(this.timing.noteTimings, this.state.range);
+    if (this.window) {
+      synth.seek(this.window.start / 1000, 'seconds');
+      synth.start();
+      this.timing.start(this.window.start / 1000, 'seconds');
+      return;
+    }
     synth.start();
     this.startTiming(this.introLength(tune));
   }
 
   private introLength(tune: TuneObject) {
-    return this.state.countIn ? tune.millisecondsPerMeasure() / this.state.speed : 0;
+    return this.state.countIn && !this.state.range
+      ? tune.millisecondsPerMeasure() / this.state.speed
+      : 0;
   }
 
   private startTiming(delay: number) {
@@ -185,6 +253,11 @@ class AbcPlayer implements Player {
 
   private ended() {
     const tune = this.tune();
+    if (this.state.loop && this.synth && this.window) {
+      this.synth.seek(this.window.start / 1000, 'seconds');
+      this.timing?.setProgress(this.window.start / 1000, 'seconds');
+      return;
+    }
     if (this.state.loop && this.synth && tune) {
       this.timing?.stop();
       this.synth.seek(0);
@@ -213,6 +286,7 @@ class AbcPlayer implements Player {
     this.timing?.stop();
     this.synth = null;
     this.timing = null;
+    this.window = undefined;
     this.paused = false;
     this.cursor([]);
     if (this.state.playing) this.emit({ playing: false });
@@ -236,6 +310,10 @@ class AbcPlayer implements Player {
 
   setCountIn(countIn: boolean) {
     this.restartWith({ countIn });
+  }
+
+  setRange(range: [number, number] | null) {
+    this.restartWith({ range: range ?? undefined });
   }
 
   private restartWith(change: Partial<PlayerState>) {
@@ -302,6 +380,7 @@ async function svgToPng(svg: string): Promise<Blob> {
 export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance> {
   let theme: ThemeColors = opts.theme;
   let zoom = opts.zoom;
+  let layout: Layout = opts.layout ?? 'page';
   let src = '';
   let tunes: TuneObject[] = [];
   let onClick: ((range: [number, number]) => void) | undefined;
@@ -325,10 +404,12 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
   );
 
   const draw = (): SourceError[] => {
+    // abcjs sizes its parent to the pane and hides what overflows.
+    el.classList.toggle('layout-horizontal', layout === 'horizontal');
     tunes = abcjs.renderAbc(el, src, {
       add_classes: true,
-      responsive: 'resize',
       scale: zoom,
+      ...(layout === 'horizontal' ? horizontal(src) : { responsive: 'resize' }),
       foregroundColor: theme.foreground,
       selectionColor: theme.accent,
       clickListener: (element) => {
@@ -347,7 +428,11 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
 
   return {
     async render(next) {
-      if (next !== src) player.stop();
+      if (next !== src) {
+        player.stop();
+        // Offsets into the old text mean nothing in the new one.
+        player.setRange(null);
+      }
       src = next;
       return { errors: draw() };
     },
@@ -384,6 +469,11 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     },
     setZoom(next) {
       zoom = next;
+      if (src) draw();
+    },
+    setLayout(next) {
+      if (next === layout) return;
+      layout = next;
       if (src) draw();
     },
     destroy() {
