@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-10-27
+
+### Added
+
+- **alphatex:** Draw at the size of the ABC staff
+- **alphatex:** Place notes on the track's tuning
+- Open each notation's example
+- Add a metronome and a count-in
+
+### Fixed
+
+- **alphatex:** Hide the overlapping tuning legend
+- **abc:** Play every track on the piano
+
+### Documentation
+
+- Show more of each notation in the examples
+- Show both examples and bass tracks
+- List the metronome and the count-in
+
 ## [0.2.0] - 2026-10-27
 
 ### Added
