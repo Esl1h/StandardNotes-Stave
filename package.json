@@ -1,6 +1,6 @@
 {
   "name": "standardnotes-stave",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Music notation and tablature editor for Standard Notes (alphaTex, ABC)",
   "keywords": [
     "Standard Notes",

@@ -1,0 +1,1 @@
+import{d as e,f as t,l as n}from"./alphaTab-ERLGGnnZ.js";function r(r){let i=new n,a;try{a=t.ScoreLoader.loadScoreFromBytes(r,i)}catch(e){let t=e instanceof Error?e.message:String(e);throw Error(`The file is not a score alphaTab can read (${t}).`,{cause:e})}return new e.AlphaTexExporter().exportToString(a,i)}export{r as toAlphaTex};
