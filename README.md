@@ -26,7 +26,7 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Click a note in the rendering to select it in the source; the note at the cursor is highlighted in the rendering
 - Playback with a cursor that follows the notes, loop, speed from 50% to 150%, a metronome and a count-in bar, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin (every voice plays on it)
 - Transpose the source a semitone at a time (key signature included)
-- Export SVG, PNG and MIDI, or download the `.abc` source
+- Export SVG, PNG and MIDI, print or save as PDF, or download the `.abc` source
 - Syntax highlighting, completion of header fields, and a cheat sheet in the Help menu
 
 ### alphaTex
@@ -37,7 +37,8 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Click a beat in the rendering to select it in the source; the beat at the cursor is marked in the rendering
 - Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, a metronome, a count-in, and mute or solo per track (Play menu)
 - Transpose the source a semitone at a time: frets (moved to another string of the track's tuning when they leave the neck), pitch names, key signature and chord symbols
-- Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, or download the `.atex` source
+- Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, print or save as PDF, or download the `.atex` source
+- Import MusicXML (also `.mxl`), Guitar Pro 3 to 7 and Capella files as alphaTex (File menu), read in the page, up to 5 MB
 - Syntax highlighting, completion of metadata tags, and a cheat sheet in the Help menu
 
 ### Editor
@@ -194,7 +195,7 @@ The `Release` workflow fails unless the tag matches every version file. It runs 
 2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export (done)
 3. Engine detection and switching, the full menu, mobile polish (done)
 4. Verovio as a higher quality renderer for ABC: measured and left out until it reads ABC with several voices ([record 16](docs/adr/0016-no-verovio-renderer-for-abc.md))
-5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF
+5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF (done)
 6. ChordPro
 
 The decisions behind the project are recorded in [docs/adr](docs/adr/README.md).
