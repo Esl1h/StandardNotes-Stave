@@ -6,7 +6,6 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronUp,
-  Menu as MenuIcon,
   Pause,
   Play,
   Repeat,
@@ -612,18 +611,18 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         />
       ) : (
         <div className="menu-bar collapsed">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Show the menu"
-            title={`Show the menu (${ctrl}Shift+M)`}
-            onClick={() => setPref('menuBar', true)}
-          >
-            <MenuIcon size={16} />
-          </button>
           {playback}
           <div className="spacer" />
           {engineSelect}
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Show the bars"
+            title={`Show the bars (${ctrl}Shift+M)`}
+            onClick={() => runShortcut({ type: 'toggleBars' })}
+          >
+            <ChevronDown size={16} />
+          </button>
         </div>
       )}
       {prefs.menuBar && prefs.toolbar && (
