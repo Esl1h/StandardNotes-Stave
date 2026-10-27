@@ -47,9 +47,9 @@ const LAYOUTS: Record<Layout, alphaTab.LayoutMode> = {
 
 const url = (path: string) => new URL(path, document.baseURI).href;
 
-// alphaTab draws at about twice the size of abcjs; at this scale a staff
-// of either engine looks the same at the same zoom.
-const BASE_SCALE = 0.6;
+// alphaTab spaces staff lines 9px apart and abcjs 6px; at this scale a
+// staff of either engine looks the same at the same zoom.
+const BASE_SCALE = 2 / 3;
 
 /**
  * How alphaTab starts its player (docs/adr/0015). Inside the Standard Notes
