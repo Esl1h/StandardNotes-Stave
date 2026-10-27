@@ -259,3 +259,27 @@ test('lays the music out in one system that scrolls across', async ({ page }) =>
   expect(await scroll.evaluate((el) => el.scrollHeight)).toBeLessThan(height);
   await expect.poll(() => page.evaluate(() => window.componentData.layout)).toBe('horizontal');
 });
+
+test('loops the beats of the selection', async ({ page }) => {
+  const plugin = await openHost(page, { text: `${HEADER}0.3.4 2.3 3.3 5.3 | 7.3.2 5.3` });
+  await expect(rendering(plugin).first()).toBeVisible();
+  await plugin.locator('.cm-content').click();
+  await page.keyboard.press('Control+End');
+  for (let i = 0; i < 9; i++) await page.keyboard.press('Shift+ArrowLeft');
+
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  await plugin.getByRole('menuitemcheckbox', { name: 'Loop the selection' }).click();
+  await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+
+  // alphaTab draws the range once its player has started.
+  const selection = plugin.locator('.at-selection div').first();
+  await expect(selection).toBeVisible({ timeout: 15000 });
+  const left = (await selection.boundingBox()).x;
+  const cursor = plugin.locator('.at-cursor-beat');
+  // The second bar lasts half a second at this tempo; the cursor stays in it.
+  for (let i = 0; i < 10; i++) {
+    await page.waitForTimeout(150);
+    expect((await cursor.boundingBox()).x).toBeGreaterThanOrEqual(left - 2);
+  }
+  await plugin.getByRole('button', { name: 'Stop' }).click();
+});

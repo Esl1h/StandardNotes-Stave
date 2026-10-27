@@ -94,6 +94,8 @@ export interface PlayerState {
   metronome?: boolean;
   /** A bar of clicks before the music, when the player has one. */
   countIn?: boolean;
+  /** The source range playback is limited to, until the source changes. */
+  range?: [number, number];
 }
 
 export interface Player {
@@ -106,6 +108,8 @@ export interface Player {
   setTrackSolo?(index: number, solo: boolean): void;
   setMetronome?(on: boolean): void;
   setCountIn?(on: boolean): void;
+  /** Plays only the music written in a source range; null plays it all. */
+  setRange?(range: [number, number] | null): void;
   onStateChange(cb: (state: PlayerState) => void): void;
 }
 

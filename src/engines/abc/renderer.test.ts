@@ -1,5 +1,5 @@
 import abcjs from 'abcjs';
-import { clickPattern, mountAbc, parseWarnings } from './renderer';
+import { clickPattern, mountAbc, parseWarnings, rangeTimes } from './renderer';
 
 const theme = {
   foreground: '#111111',
@@ -204,4 +204,17 @@ test('lays out one system across, and pages again', async () => {
   instance.setLayout!('page');
   expect(el.querySelector('.abcjs-l4')).not.toBeNull();
   expect(el.classList.contains('layout-horizontal')).toBe(false);
+});
+
+test('times the notes written in a source range', () => {
+  const el = document.createElement('div');
+  // A quarter note lasts 500 ms at this tempo.
+  const src = 'X:1\nL:1/4\nQ:1/4=120\nK:C\nCDEF|GABc|]\n';
+  const [tune] = abcjs.renderAbc(el, src, { add_classes: true });
+  const timings = new abcjs.TimingCallbacks(tune, {}).noteTimings;
+  const at = (text: string) => src.indexOf(text);
+
+  expect(rangeTimes(timings, [at('EF'), at('F|') + 1])).toEqual({ start: 1000, end: 2000 });
+  expect(rangeTimes(timings, [at('c|'), at('c|') + 1])).toEqual({ start: 3500, end: 4000 });
+  expect(rangeTimes(timings, [0, at('CDEF')])).toBeUndefined();
 });

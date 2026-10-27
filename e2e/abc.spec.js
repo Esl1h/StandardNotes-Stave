@@ -199,3 +199,36 @@ test('lays the music out in one system that scrolls across', async ({ page }) =>
   await expect(plugin.locator('.render-target .abcjs-staff-wrapper')).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => window.componentData.layout)).toBe('horizontal');
 });
+
+test('loops the notes of the selection', async ({ page }) => {
+  // A bar lasts one second at this tempo.
+  const plugin = await openHost(page, { text: 'X:1\nM:4/4\nL:1/4\nQ:1/4=240\nK:C\nCDEF|GABc|]\n' });
+  await expect(plugin.locator('.render-target .abcjs-note')).toHaveCount(8);
+  await plugin.locator('.cm-content').click();
+  await page.keyboard.press('Control+End');
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowLeft');
+
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  await plugin.getByRole('menuitemcheckbox', { name: 'Loop the selection' }).click();
+  await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+
+  // The notes that sound over two and a half bars, by their index.
+  const heard = await plugin.locator('.render-target').evaluate(
+    (target) =>
+      new Promise((resolve) => {
+        const notes = Array.from(target.querySelectorAll('.abcjs-note'));
+        const seen = new Set();
+        const timer = setInterval(() => {
+          notes.forEach((note, i) => note.classList.contains('stave-playing') && seen.add(i));
+        }, 20);
+        setTimeout(() => {
+          clearInterval(timer);
+          resolve([...seen].sort());
+        }, 2500);
+      })
+  );
+  expect(heard).toEqual([4, 5, 6, 7]);
+  await expect(plugin.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
+  await plugin.getByRole('button', { name: 'Stop' }).click();
+});

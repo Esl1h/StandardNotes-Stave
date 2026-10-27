@@ -383,6 +383,21 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         },
         { label: 'Stop', disabled: !instance?.player, onSelect: () => instance?.player?.stop() },
         check('Loop', player.loop, () => instance?.player?.setLoop(!player.loop)),
+        ...(instance?.player?.setRange
+          ? [
+              {
+                label: 'Loop the selection',
+                checked: !!player.range,
+                disabled: !player.range && (!selection || selection[0] === selection[1]),
+                onSelect: () => {
+                  const active = instance.player;
+                  if (player.range || !selection) return active?.setRange?.(null);
+                  active?.setRange?.(selection);
+                  active?.setLoop(true);
+                },
+              },
+            ]
+          : []),
         ...(player.metronome !== undefined
           ? [
               check('Metronome', player.metronome, () =>

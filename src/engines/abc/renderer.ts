@@ -1,4 +1,9 @@
-import abcjs, { type MidiBuffer, type TimingCallbacks, type TuneObject } from 'abcjs';
+import abcjs, {
+  type MidiBuffer,
+  type NoteTimingEvent,
+  type TimingCallbacks,
+  type TuneObject,
+} from 'abcjs';
 import {
   type EngineInstance,
   type ExportFormat,
@@ -102,6 +107,27 @@ export function clickPattern(beats: number): string {
   ].join(' ');
 }
 
+/**
+ * When the music written in a source range plays, in milliseconds from the
+ * start: from its first note to the next note after its last one, or the
+ * end. Undefined when the range holds no note.
+ */
+export function rangeTimes(
+  timings: NoteTimingEvent[],
+  [from, to]: [number, number]
+): { start: number; end: number } | undefined {
+  const inRange = (event: NoteTimingEvent) =>
+    (event.startCharArray ?? [event.startChar ?? -1]).some((char) => char >= from && char < to);
+  const events = timings.filter((event) => event.type === 'event');
+  const chosen = events.filter(inRange);
+  if (!chosen.length) return undefined;
+  const start = Math.min(...chosen.map((event) => event.milliseconds));
+  const last = Math.max(...chosen.map((event) => event.milliseconds));
+  const next = events.find((event) => event.milliseconds > last);
+  const end = next?.milliseconds ?? timings[timings.length - 1]?.milliseconds ?? last;
+  return { start, end };
+}
+
 class AbcPlayer implements Player {
   private synth: MidiBuffer | null = null;
   private timing: TimingCallbacks | null = null;
@@ -118,6 +144,8 @@ class AbcPlayer implements Player {
   private introTimer: ReturnType<typeof setTimeout> | undefined;
   private introEnds = 0;
   private introLeft = 0;
+  // The part of the tune a range plays, from rangeTimes.
+  private window: { start: number; end: number } | undefined;
 
   constructor(
     private tune: () => TuneObject | undefined,
@@ -164,7 +192,8 @@ class AbcPlayer implements Player {
             this.state.metronome || this.state.countIn
               ? clickPattern(tune.getMeterFraction().num)
               : '',
-          drumIntro: this.state.countIn ? 1 : 0,
+          // A range starts in the middle of the audio, after any intro.
+          drumIntro: this.state.countIn && !this.state.range ? 1 : 0,
           // Off after the intro: a count-in without the metronome.
           drumOff: !this.state.metronome,
           onEnded: () => this.ended(),
@@ -186,16 +215,29 @@ class AbcPlayer implements Player {
     this.timing = new abcjs.TimingCallbacks(tune, {
       qpm: tune.getBpm() * this.state.speed,
       eventCallback: (event) => {
+        if (this.window && event && event.milliseconds >= this.window.end) {
+          this.ended();
+          return undefined;
+        }
         this.cursor(event?.elements ?? []);
         return undefined;
       },
     });
+    this.window = this.state.range && rangeTimes(this.timing.noteTimings, this.state.range);
+    if (this.window) {
+      synth.seek(this.window.start / 1000, 'seconds');
+      synth.start();
+      this.timing.start(this.window.start / 1000, 'seconds');
+      return;
+    }
     synth.start();
     this.startTiming(this.introLength(tune));
   }
 
   private introLength(tune: TuneObject) {
-    return this.state.countIn ? tune.millisecondsPerMeasure() / this.state.speed : 0;
+    return this.state.countIn && !this.state.range
+      ? tune.millisecondsPerMeasure() / this.state.speed
+      : 0;
   }
 
   private startTiming(delay: number) {
@@ -211,6 +253,11 @@ class AbcPlayer implements Player {
 
   private ended() {
     const tune = this.tune();
+    if (this.state.loop && this.synth && this.window) {
+      this.synth.seek(this.window.start / 1000, 'seconds');
+      this.timing?.setProgress(this.window.start / 1000, 'seconds');
+      return;
+    }
     if (this.state.loop && this.synth && tune) {
       this.timing?.stop();
       this.synth.seek(0);
@@ -239,6 +286,7 @@ class AbcPlayer implements Player {
     this.timing?.stop();
     this.synth = null;
     this.timing = null;
+    this.window = undefined;
     this.paused = false;
     this.cursor([]);
     if (this.state.playing) this.emit({ playing: false });
@@ -262,6 +310,10 @@ class AbcPlayer implements Player {
 
   setCountIn(countIn: boolean) {
     this.restartWith({ countIn });
+  }
+
+  setRange(range: [number, number] | null) {
+    this.restartWith({ range: range ?? undefined });
   }
 
   private restartWith(change: Partial<PlayerState>) {
@@ -376,7 +428,11 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
 
   return {
     async render(next) {
-      if (next !== src) player.stop();
+      if (next !== src) {
+        player.stop();
+        // Offsets into the old text mean nothing in the new one.
+        player.setRange(null);
+      }
       src = next;
       return { errors: draw() };
     },
