@@ -5,6 +5,12 @@ M:4/4
 L:1/8
 Q:1/4=110
 K:G
-|: "G"G2 BG dGBG | "C"c2 ec "G"B2 dB | "Am"A2 cA "D"F2 AF | "G"G4 z4 :|
-|: "Em"e2 ge !trill!f2 ed | "C"c2 ec "G"B2 (3dcB | "Am"A2 cA "D7"d2 cA |1 "G"G4 z4 :|2 "G"!fermata!G8 |]
+%%score V1 V2
+V:V1 clef=treble name="Melody"
+V:V2 clef=bass name="Bass"
+% The melody with chord symbols, ornaments and lyrics, over a bass line.
+[V:V1] |: !mp! "G"G2 BG dGBG | "C"c2 ec "G"B2 (dB) | "Am".A2 .cA "D"F2 AF | "G"G4 z4 :|
+[V:V2] |: G,,4 D,4 | C,4 G,,4 | A,,4 D,4 | G,,4 z4 :|
+[V:V1] |: !mf! "Em"e2 ge !trill!f2 ed | "C"(c2 ec) "G"B2 (3dcB | "Am"A2 !accent!c2 "D7"{e}d2 cA |1 "G"G4 z4 :|2 "G"!fermata!G8 |]
 w: Morn-ing comes on the stave, and the tune goes round a-gain
+[V:V2] |: E,4 B,,4 | C,4 G,,4 | A,,4 D,4 |1 G,,4 z4 :|2 G,,8 |]

@@ -24,10 +24,10 @@ test('an empty note starts from the alphaTex template', async ({ page }) => {
   await expect(plugin.getByRole('combobox', { name: 'Notation' })).toHaveValue('alphatex');
 });
 
-test('renders the example with both tracks and redraws after edits', async ({ page }) => {
+test('renders the example with its three tracks and redraws after edits', async ({ page }) => {
   const plugin = await openHost(page, { text: EXAMPLE });
   await expect(rendering(plugin).first()).toBeVisible();
-  await expect(plugin.locator('.render-target')).toContainText('Morning Riff');
+  await expect(plugin.locator('.render-target')).toContainText('Morning on the Stave');
 
   const edited = await openHost(page, { text: `${HEADER}3.3.4` });
   await expect(rendering(edited).first()).toBeVisible();
@@ -92,9 +92,9 @@ test('exports SVG, MIDI and Guitar Pro files named after the title', async ({ pa
   await expect(rendering(plugin).first()).toBeVisible();
 
   for (const [label, name] of [
-    ['Export SVG image', 'Morning Riff.svg'],
-    ['Export MIDI file', 'Morning Riff.mid'],
-    ['Export Guitar Pro 7', 'Morning Riff.gp'],
+    ['Export SVG image', 'Morning on the Stave.svg'],
+    ['Export MIDI file', 'Morning on the Stave.mid'],
+    ['Export Guitar Pro 7', 'Morning on the Stave.gp'],
   ]) {
     await plugin.getByRole('menuitem', { name: 'File' }).click();
     const download = page.waitForEvent('download');
@@ -104,7 +104,7 @@ test('exports SVG, MIDI and Guitar Pro files named after the title', async ({ pa
     if (name.endsWith('.svg')) {
       const svg = readFileSync(await file.path(), 'utf8');
       expect(svg).toContain('data:font/woff2;base64,');
-      expect(svg).toContain('Morning Riff');
+      expect(svg).toContain('Morning on the Stave');
     }
   }
 });
@@ -170,7 +170,7 @@ test('mutes and solos a track from the Play menu', async ({ page }) => {
     'aria-checked',
     'true'
   );
-  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Solo Guitar' })).toHaveAttribute(
+  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Solo Melody' })).toHaveAttribute(
     'aria-checked',
     'false'
   );
