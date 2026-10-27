@@ -116,6 +116,11 @@ export default defineConfig({
       ],
       reporter: ['text', 'json-summary'],
       reportsDirectory: './coverage',
+      // The goal set for the notation code; the UI is covered by e2e too.
+      thresholds: {
+        'src/core/**': { lines: 80, statements: 80, functions: 80, branches: 70 },
+        'src/engines/**': { lines: 80, statements: 80, functions: 80, branches: 70 },
+      },
     },
   },
 });
