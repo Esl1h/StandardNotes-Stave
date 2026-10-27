@@ -41,6 +41,10 @@ const PROFILES: Record<string, alphaTab.StaveProfile> = {
 
 const url = (path: string) => new URL(path, document.baseURI).href;
 
+// alphaTab draws at about twice the size of abcjs; at this scale a staff
+// of either engine looks the same at the same zoom.
+const BASE_SCALE = 0.6;
+
 /**
  * How alphaTab starts its player (docs/adr/0015). Inside the Standard Notes
  * iframe the page has an opaque origin: it may not start a worker from the
@@ -302,7 +306,9 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       logLevel: alphaTab.LogLevel.None,
     },
     display: {
-      scale: opts.zoom,
+      scale: opts.zoom * BASE_SCALE,
+      // The pane has a padding of its own.
+      padding: [8, 8],
       layoutMode: alphaTab.LayoutMode.Page,
       staveProfile: PROFILES[view],
       resources: resources(theme),
@@ -408,7 +414,7 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       if (api.score) void draw();
     },
     setZoom(next) {
-      api.settings.display.scale = next;
+      api.settings.display.scale = next * BASE_SCALE;
       api.updateSettings();
       if (api.score) void draw();
     },
