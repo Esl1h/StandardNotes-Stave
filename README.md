@@ -80,14 +80,14 @@ The hosted build is plain static files, so it can be served from anywhere. Unzip
 
 ## Verifying a release
 
-Each release attaches a `SHA256SUMS` file and a build provenance attestation next to `extension.zip`, the package the desktop app installs. To check a downloaded zip, run in the folder that holds both files:
+Each release attaches a `SHA256SUMS` file and a signed build provenance (`extension.zip.intoto.jsonl`) next to `extension.zip`, the package the desktop app installs. To check a downloaded zip, run in the folder that holds the files:
 
 ```
 sha256sum -c SHA256SUMS
 gh attestation verify extension.zip -R Esl1h/StandardNotes-Stave
 ```
 
-The second command confirms that the zip was built by this repository's release workflow from the tagged commit. Releases are immutable: once published, their tag and files cannot be changed.
+The second command confirms that the zip was built by this repository's release workflow from the tagged commit; with `--bundle extension.zip.intoto.jsonl` it checks the attached provenance instead of fetching it from GitHub. Releases are immutable: once published, their tag and files cannot be changed.
 
 ## Note format
 
@@ -187,7 +187,7 @@ The extension is hosted on GitHub Pages from the `gh-pages` branch, served at `h
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 ```
 
-The `Release` workflow fails unless the tag matches every version file. It runs the checks, attaches `extension.zip` (the package the desktop app installs) with `SHA256SUMS` and a provenance attestation to the GitHub release, writes the release notes with git-cliff and publishes the hosted build to Pages. The app finds the update by comparing the version in the `ext.json` at `latest_url`.
+The `Release` workflow fails unless the tag matches every version file. It runs the checks, attaches `extension.zip` (the package the desktop app installs) with `SHA256SUMS` and its signed provenance to the GitHub release, writes the release notes with git-cliff and publishes the hosted build to Pages. The app finds the update by comparing the version in the `ext.json` at `latest_url`.
 
 ## Roadmap
 
