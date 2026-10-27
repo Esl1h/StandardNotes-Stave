@@ -8,15 +8,15 @@
 [![Release](https://img.shields.io/github/v/release/Esl1h/StandardNotes-Stave)](https://github.com/Esl1h/StandardNotes-Stave/releases/latest)
 [![License](https://img.shields.io/github/license/Esl1h/StandardNotes-Stave)](LICENSE)
 
-A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
+A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex, ChordPro) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
 
-ABC and alphaTex work end to end: drawing, playback, export, import and printing. ChordPro is next (see [Roadmap](#roadmap)).
+ABC and alphaTex work end to end: drawing, playback, export, import and printing. ChordPro song sheets are drawn, transposed, exported and printed.
 
 ![Stave editing an ABC tune with a melody and a bass line, light theme](.github/screenshots/stave-abc-light.png)
 
 ![The same tune in alphaTex, with melody, rhythm guitar and 4-string bass tracks, dark theme](.github/screenshots/stave-alphatex-dark.png)
 
-More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and [alphaTex, light theme](.github/screenshots/stave-alphatex-light.png).
+More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png), [alphaTex, light theme](.github/screenshots/stave-alphatex-light.png) and ChordPro in a [light](.github/screenshots/stave-chordpro-light.png) and a [dark](.github/screenshots/stave-chordpro-dark.png) theme.
 
 ## Features
 
@@ -41,6 +41,16 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, print or save as PDF, or download the `.atex` source
 - Import MusicXML (also `.mxl`), Guitar Pro 3 to 7 and Capella files as alphaTex (File menu), read in the page, up to 5 MB
 - Syntax highlighting, completion of metadata tags, and a cheat sheet in the Help menu
+
+### ChordPro
+
+- Song sheets in [ChordPro](https://www.chordpro.org): chords over the syllables they are sung on, title, artist and song facts (key, capo, tempo, time), verses, choruses and bridges with their labels, comments, and tablature kept as written
+- Drawn by Stave's own parser, as HTML with the text of the note always put in as text; unknown directives, unclosed chords and sections are underlined in the source at their line and column
+- A toolbar for common chords, verse, chorus, bridge, comment, tablature, capo, title and key; a selection is wrapped in the section
+- Click a chord or a lyric to select it in the source; the chord or lyric at the cursor is highlighted in the sheet
+- Transpose the chords (bass notes included) and the `{key}` a semitone at a time
+- Export SVG, print or save as PDF, or download the `.pro` source; no playback, since a song sheet has no rhythm
+- Syntax highlighting, completion of directives, and a cheat sheet in the Help menu
 
 ### Editor
 
@@ -93,7 +103,7 @@ The second command confirms that the zip was built by this repository's release 
 
 ## Note format
 
-The note is the notation source, nothing else. Stave picks the engine from the text: ABC when the first line that is not empty starts with `X:`, alphaTex when lines start with a backslash tag such as `\title`. An empty note offers the engines with a template each. Switching the engine of a written note asks first and never converts the text.
+The note is the notation source, nothing else. Stave picks the engine from the text: ABC when the first line that is not empty starts with `X:`, alphaTex when lines start with a backslash tag such as `\title`, ChordPro when it has song directives such as `{title:}` or lyrics with `[chords]`. An empty note offers the engines with a template each. Switching the engine of a written note asks first and never converts the text.
 
 An ABC note is plain [ABC 2.1](https://abcnotation.com/wiki/abc:standard:v2.1), so it opens in any ABC tool:
 
@@ -121,6 +131,16 @@ An alphaTex note is plain [alphaTex](https://www.alphatab.net/docs/alphatex/intr
 ```
 
 A bass track takes its tuning from `\tuning`, high string first: `(G2 D2 A1 E1)` for 4 strings, `(G2 D2 A1 E1 B0)` for 5. `\instrument (electricbassfinger)` picks its sound for playback.
+
+A ChordPro note is plain [ChordPro](https://www.chordpro.org/chordpro/), which other song book tools print:
+
+```
+{title: Morning on the Stave}
+{key: G}
+{start_of_chorus}
+And the [C]tune goes [G]round a-[Am]gain, [D7]
+{end_of_chorus}
+```
 
 [examples/](examples) has a note for each notation, used by the tests and the screenshots.
 
@@ -205,7 +225,7 @@ sh scripts/export-community.sh ../plugins --pr   # after a review: commit, push,
 3. Engine detection and switching, the full menu, mobile polish (done)
 4. Verovio as a higher quality renderer for ABC: measured and left out until it reads ABC with several voices ([record 16](docs/adr/0016-no-verovio-renderer-for-abc.md))
 5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF (done)
-6. ChordPro
+6. ChordPro (done)
 
 The decisions behind the project are recorded in [docs/adr](docs/adr/README.md).
 
