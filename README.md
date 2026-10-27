@@ -9,7 +9,7 @@
 
 A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
 
-Stave is in early development: ABC and alphaTex work end to end, and more is coming (see [Roadmap](#roadmap)).
+ABC and alphaTex work end to end: drawing, playback, export, import and printing. ChordPro is next (see [Roadmap](#roadmap)).
 
 ![Stave editing an ABC tune with a melody and a bass line, light theme](.github/screenshots/stave-abc-light.png)
 
@@ -53,7 +53,8 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Notation engines behind one interface: each engine detects its own text, offers a template and a cheat sheet, and turns toolbar actions into its syntax
 - Renderer errors shown inline in the source, with line and column
 - Keyboard shortcuts for durations, rests, bar lines, playback, transposition and the layout (Help, Keyboard shortcuts)
-- Every Standard Notes theme, through the theme variables only
+- Every Standard Notes theme, through the theme variables only, with text contrast of WCAG AA on light and dark themes
+- Keyboard reachable throughout: menus, toolbar, dialogs and both panes, checked against WCAG 2.1 AA with axe-core in the e2e suite
 - Locked notes open read-only
 - Phones get collapsed bars, stacked panes and a drawer with the toolbar's tools
 - Layout preferences are kept per editor in Standard Notes, never in the note
@@ -188,6 +189,13 @@ git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 ```
 
 The `Release` workflow fails unless the tag matches every version file. It runs the checks, attaches `extension.zip` (the package the desktop app installs) with `SHA256SUMS` and its signed provenance to the GitHub release, writes the release notes with git-cliff and publishes the hosted build to Pages. The app finds the update by comparing the version in the `ext.json` at `latest_url`.
+
+To offer a release to the [community plugins repository](https://github.com/standardnotes/plugins), check out a fork of it and run, from this repository on the release tag:
+
+```
+sh scripts/export-community.sh ../plugins        # copies packages/org.esl1h.sn-stave-editor
+sh scripts/export-community.sh ../plugins --pr   # after a review: commit, push, open the PR
+```
 
 ## Roadmap
 
