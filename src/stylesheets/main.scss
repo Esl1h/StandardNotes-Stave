@@ -509,6 +509,11 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
   display: block;
 }
 
+.render-target .chordpro-sheet .stave-highlight {
+  background-color: color-mix(in srgb, var(--sn-stylekit-info-color) 18%, transparent);
+  border-radius: 2px;
+}
+
 .render-target.layout-horizontal {
   width: max-content !important;
 }
