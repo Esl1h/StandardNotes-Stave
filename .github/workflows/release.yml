@@ -71,7 +71,7 @@ jobs:
             const pkg = {
               name: 'standardnotes-stave',
               version: process.env.VERSION,
-              description: 'Music notation and tablature editor for Standard Notes (alphaTex, ABC)',
+              description: 'Music notation and tablature editor for Standard Notes (alphaTex, ABC, ChordPro)',
               private: true,
               license: 'AGPL-3.0-or-later',
               sn: { main: 'index.html' },
