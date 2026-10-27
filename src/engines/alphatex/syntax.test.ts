@@ -11,6 +11,7 @@ import {
   isPitchedStaff,
   midiOf,
   transposeAlphaTex,
+  tuningAt,
 } from './syntax';
 
 const apply = (src: string, edit: Edit) =>
@@ -22,6 +23,7 @@ const run = (src: string, cmd: Cmd, at = src.length) =>
 
 const HEADER = '\\title "Test"\n\\tempo 120\n\\track "Guitar"\n\\staff {score tabs}\n';
 const PITCHED = '\\title "Test"\n\\track "Flute"\n\\staff {score}\n';
+const BASS = '\\title "Test"\n\\track "Bass"\n\\tuning (G2 D2 A1 E1)\n\\staff {score tabs}\n';
 
 /** Every diagnostic of alphaTab's own parser that is not a mere hint. */
 function problems(src: string): string[] {
@@ -59,6 +61,21 @@ describe('pitches', () => {
     // Out of range: moved by octaves.
     expect(fretString(28)).toBe('0.6');
     expect(fretString(100)).toBe('24.1');
+  });
+
+  test('places pitches on other tunings', () => {
+    const bass4 = [43, 38, 33, 28];
+    const bass5 = [43, 38, 33, 28, 23];
+    expect(fretString(28, bass4)).toBe('0.4');
+    expect(fretString(23, bass4)).toBe('2.3');
+    expect(fretString(23, bass5)).toBe('0.5');
+    expect(fretString(60, bass4)).toBe('17.1');
+  });
+
+  test('reads the tuning of the track at the cursor', () => {
+    const src = '\\track "Guitar"\n0.6.4\n\\track "Bass"\n\\tuning (G2 D2 A1 E1 B0)\n0.5.4';
+    expect(tuningAt(src, src.indexOf('0.6'))).toEqual([64, 59, 55, 50, 45, 40]);
+    expect(tuningAt(src, src.length)).toEqual([43, 38, 33, 28, 23]);
   });
 });
 
@@ -247,6 +264,7 @@ describe('what the toolbar writes is valid alphaTex', () => {
   test.each([
     ['a staff with tablature', HEADER],
     ['a staff without tablature', PITCHED],
+    ['a 4-string bass', BASS],
   ])('on %s, a sequence of commands parses without warnings', (_, header) => {
     fc.assert(
       fc.property(fc.array(commands, { maxLength: 30 }), (cmds) => {
@@ -273,6 +291,14 @@ describe('transposition', () => {
     const src =
       '\\title "C4 Blues"\n\\tuning (E4 B3 G3 D3 A2 E2)\n\\tempo 120\n// 3.3 stays\n3.3.4';
     expect(transposeAlphaTex(src, 3)).toBe(src.replace(/3\.3\.4$/, '6.3.4'));
+  });
+
+  test('moves a fret off the neck to another string of the track tuning', () => {
+    // A 4-string bass: open A down a tone is G on the E string, not string 5.
+    const bass = '\\track "Bass"\n\\tuning (G2 D2 A1 E1)\n0.3.4';
+    expect(transposeAlphaTex(bass, -2)).toBe(bass.replace(/0\.3\.4$/, '3.4.4'));
+    // Below the lowest string, the note goes up an octave.
+    expect(transposeAlphaTex(`${bass}\n0.4.4`, -1).endsWith('1.2.4')).toBe(true);
   });
 
   test('moves a fret off the neck to another string', () => {

@@ -5,7 +5,8 @@ import { type Cmd, type CursorCtx, type Edit, type HeaderKey } from '../../core/
  * module is part of the initial load, the renderer is not.
  */
 
-// Strings 1 (high E) to 6 of a guitar in standard tuning, as MIDI numbers.
+// Strings 1 (high E) to 6 of a guitar in standard tuning, as MIDI numbers:
+// what alphaTab assumes for a track without \tuning.
 const STANDARD_TUNING = [64, 59, 55, 50, 45, 40];
 const HIGHEST_FRET = 24;
 
@@ -26,16 +27,43 @@ export function midiOf(pitch: string): number | null {
 }
 
 /**
- * Where a guitar in standard tuning plays a MIDI pitch, as fret.string:
- * the highest string that reaches it, so the lowest fret. Pitches out of
- * the guitar's range move by octaves until they fit.
+ * Where an instrument plays a MIDI pitch, as fret.string: the highest string
+ * that reaches it, so the lowest fret. Pitches out of its range move by
+ * octaves until they fit. The tuning lists the open strings from string 1
+ * (the highest) down, as \tuning writes them.
  */
-export function fretString(midi: number): string {
+export function fretString(midi: number, tuning: number[] = STANDARD_TUNING): string {
+  const lowest = Math.min(...tuning);
+  const highest = Math.max(...tuning) + HIGHEST_FRET;
   let pitch = midi;
-  while (pitch < STANDARD_TUNING[5]) pitch += 12;
-  while (pitch > STANDARD_TUNING[0] + HIGHEST_FRET) pitch -= 12;
-  const string = STANDARD_TUNING.findIndex((open) => pitch >= open);
-  return `${pitch - STANDARD_TUNING[string]}.${string + 1}`;
+  while (pitch < lowest) pitch += 12;
+  while (pitch > highest) pitch -= 12;
+  const string = tuning.findIndex((open) => pitch >= open && pitch - open <= HIGHEST_FRET);
+  return `${pitch - tuning[string]}.${string + 1}`;
+}
+
+/** Where each track starts, with the tuning its \tuning gives, in source order. */
+function tunings(src: string): Array<{ from: number; tuning: number[] }> {
+  const tracks: Array<{ from: number; tuning: number[] }> = [{ from: 0, tuning: STANDARD_TUNING }];
+  const tag = /\\(track|tuning)\b\s*(?:\(([^)]*)\))?/g;
+  for (const match of src.matchAll(tag)) {
+    if (match[1] === 'track') {
+      tracks.push({ from: match.index ?? 0, tuning: STANDARD_TUNING });
+      continue;
+    }
+    const pitches = (match[2] ?? '').split(/\s+/).map(midiOf);
+    if (pitches.length && pitches.every((pitch) => pitch !== null)) {
+      tracks[tracks.length - 1].tuning = pitches as number[];
+    }
+  }
+  return tracks;
+}
+
+/** The open strings of the track at pos, high to low. */
+export function tuningAt(src: string, pos: number): number[] {
+  return tunings(src)
+    .filter((track) => track.from <= pos)
+    .at(-1)!.tuning;
 }
 
 // A note: fret.string (a fret, "-" for a tie, "x" for a dead note) or a
@@ -297,7 +325,7 @@ export function emitAlphaTex(cmd: Cmd, ctx: CursorCtx): Edit {
       const midi = cmd.pitch ? midiOf(cmd.pitch) : null;
       let notes: string;
       if (midi !== null) {
-        notes = pitched ? cmd.pitch : fretString(midi);
+        notes = pitched ? cmd.pitch : fretString(midi, tuningAt(ctx.src, ctx.from));
       } else if (previous && !isRest(previous)) {
         notes = mapNotes(previous.notes, (value) => value.replace(/^-/, '0'));
       } else {
@@ -385,14 +413,13 @@ function shiftPitch(pitch: string, semitones: number): string {
 
 /**
  * A fret moved by semitones on the same string while it stays on the neck;
- * otherwise the note moves to the string that plays it on a guitar in
- * standard tuning.
+ * otherwise the note moves to the string of the track's tuning that plays it.
  */
-function shiftFret(fret: number, string: number, semitones: number): string {
+function shiftFret(fret: number, string: number, semitones: number, tuning: number[]): string {
   const moved = fret + semitones;
   if (moved >= 0 && moved <= HIGHEST_FRET) return `${moved}.${string}`;
-  const open = STANDARD_TUNING[string - 1] ?? STANDARD_TUNING[0];
-  return fretString(open + moved);
+  const open = tuning[string - 1] ?? tuning[0];
+  return fretString(open + moved, tuning);
 }
 
 // What transposition reads: comments and strings stay as they are, tags
@@ -414,11 +441,24 @@ const TRANSPOSABLE = new RegExp(
 /** The source with every note, key signature and chord symbol moved by semitones. */
 export function transposeAlphaTex(src: string, semitones: number): string {
   if (semitones === 0) return src;
+  const tracks = tunings(src);
+  const tuningOf = (offset: number) =>
+    tracks.filter((track) => track.from <= offset).at(-1)!.tuning;
   return src.replace(
     TRANSPOSABLE,
-    (whole, keyTag?: string, key?: string, fret?: string, string?: string, pitch?: string) => {
+    (whole: string, ...groups: Array<string | number | undefined>) => {
+      const [keyTag, key, fret, string, pitch, offset] = groups as [
+        string?,
+        string?,
+        string?,
+        string?,
+        string?,
+        number?,
+      ];
       if (key !== undefined) return `${keyTag}${shiftName(key, semitones)}`;
-      if (fret !== undefined) return shiftFret(Number(fret), Number(string), semitones);
+      if (fret !== undefined) {
+        return shiftFret(Number(fret), Number(string), semitones, tuningOf(offset ?? 0));
+      }
       if (pitch !== undefined) return shiftPitch(pitch, semitones);
       if (whole.startsWith('{')) {
         return whole.replace(
