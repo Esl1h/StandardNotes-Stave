@@ -112,7 +112,10 @@ test('plays with the bundled piano samples and never a CDN', async ({ page }) =>
     if (url.hostname !== 'localhost') remote.push(request.url());
     if (url.pathname.includes('/soundfont/')) samples.push(url.pathname);
   });
-  const plugin = await openHost(page, { text: 'X:1\nL:1/8\nQ:1/4=240\nK:C\nCDEF|]\n' });
+  // A violin is asked for; the build has piano samples only.
+  const plugin = await openHost(page, {
+    text: 'X:1\nL:1/8\nQ:1/4=240\n%%MIDI program 40\nK:C\nCDEF|]\n',
+  });
   await expect(plugin.locator('.render-target svg')).toBeVisible();
 
   await plugin.getByRole('button', { name: 'Play', exact: true }).click();

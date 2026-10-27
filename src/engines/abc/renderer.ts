@@ -16,8 +16,6 @@ import {
  */
 
 const SOUNDFONT = 'soundfont/FluidR3_GM/';
-// The only instrument shipped; every track plays on it.
-const INSTRUMENT = 'acoustic_grand_piano';
 const HIGHLIGHT = 'stave-highlight';
 const PLAYING = 'stave-playing';
 
@@ -36,6 +34,32 @@ export function parseWarnings(warnings: string[] | undefined): SourceError[] {
 
 const sourceFile = () => new URL(SOUNDFONT, document.baseURI).href;
 
+// General MIDI program 0, the acoustic grand piano: the only instrument
+// shipped (docs/adr/0014), so every track and the percussion play on it.
+const PIANO = 0;
+
+/**
+ * The tune as abcjs's synth sees it, with every program set to the piano.
+ * The synth picks the samples to load from the sequence setUpAudio builds,
+ * before any callback could change it, so the change goes there.
+ */
+function onPiano(tune: TuneObject): TuneObject {
+  return Object.create(tune, {
+    setUpAudio: {
+      value: (params: Parameters<TuneObject['setUpAudio']>[0]) => {
+        const sequence = tune.setUpAudio(params);
+        for (const track of sequence.tracks) {
+          for (const event of track as Array<{ cmd?: string; instrument?: number }>) {
+            if (event.cmd === 'program' || event.instrument !== undefined) {
+              event.instrument = PIANO;
+            }
+          }
+        }
+        return sequence;
+      },
+    },
+  }) as TuneObject;
+}
 class AbcPlayer implements Player {
   private synth: MidiBuffer | null = null;
   private timing: TimingCallbacks | null = null;
@@ -77,15 +101,13 @@ class AbcPlayer implements Player {
     this.emit({ playing: true });
     try {
       const loading = await synth.init({
-        visualObj: tune,
+        visualObj: onPiano(tune),
         millisecondsPerMeasure: tune.millisecondsPerMeasure() / this.state.speed,
         options: {
           soundFontUrl: sourceFile(),
           // What abcjs uses for these same samples from its default URL.
           soundFontVolumeMultiplier: 3,
           drumOff: true,
-          sequenceCallback: (tracks) =>
-            tracks.map((track) => track.map((note) => ({ ...note, instrument: INSTRUMENT }))),
           onEnded: () => this.ended(),
         },
       });
