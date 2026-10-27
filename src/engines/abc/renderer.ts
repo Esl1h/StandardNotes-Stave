@@ -60,7 +60,9 @@ function horizontal(src: string) {
  */
 export function parseWarnings(warnings: string[] | undefined): SourceError[] {
   return (warnings ?? []).map((warning) => {
-    const text = warning.replace(/<[^>]*>/g, '');
+    // The text of the HTML, read by an inert parser: nothing in it runs or
+    // loads, and no tag survives, closed or not.
+    const text = new DOMParser().parseFromString(warning, 'text/html').body.textContent ?? '';
     const match = /^(?:Music )?Line:\s*(\d+):(\d+):\s*([^]*?)(?::\s{2}[^]*)?$/.exec(text);
     if (!match) return { message: text, line: 1, column: 1 };
     return { message: match[3].trim(), line: Number(match[1]), column: Number(match[2]) };

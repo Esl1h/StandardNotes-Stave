@@ -20,6 +20,12 @@ test('reads line, column and message from abcjs warnings', () => {
     { message: 'Something else', line: 1, column: 1 },
   ]);
   expect(parseWarnings(undefined)).toEqual([]);
+  // Unclosed tags and entities come out as text, never as markup.
+  expect(parseWarnings(['Line:1:2: Bad <<b>x</b> &amp; <img src=x onerror=y><i']).at(0)).toEqual({
+    message: 'Bad <x &',
+    line: 1,
+    column: 2,
+  });
 });
 
 test('renders a tune and reports its errors', async () => {
