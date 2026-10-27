@@ -313,6 +313,12 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       staveProfile: PROFILES[view],
       resources: resources(theme),
     },
+    notation: {
+      // The track names and tunings above the first system overlap each
+      // other in alphaTab 1.8.4; each staff already names its track, and the
+      // source states any tuning.
+      elements: new Map([[alphaTab.NotationElement.GuitarTuning, false]]),
+    },
     player: {
       playerMode: alphaTab.PlayerMode.Disabled,
       enableCursor: true,
