@@ -375,6 +375,20 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         },
         { label: 'Stop', disabled: !instance?.player, onSelect: () => instance?.player?.stop() },
         check('Loop', player.loop, () => instance?.player?.setLoop(!player.loop)),
+        ...(player.metronome !== undefined
+          ? [
+              check('Metronome', player.metronome, () =>
+                instance?.player?.setMetronome?.(!player.metronome)
+              ),
+            ]
+          : []),
+        ...(player.countIn !== undefined
+          ? [
+              check('Count-in', player.countIn, () =>
+                instance?.player?.setCountIn?.(!player.countIn)
+              ),
+            ]
+          : []),
         'separator',
         ...SPEEDS.map((speed) =>
           check(`Speed ${speed * 100}%`, player.speed === speed, () =>

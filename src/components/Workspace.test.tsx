@@ -206,10 +206,12 @@ test('a failed playback says why and shows Play again', async () => {
   expect(screen.getByRole('button', { name: 'Play' })).toBeEnabled();
 });
 
-test('offers the views and track controls of the renderer', async () => {
+test('offers the views, track and click controls of the renderer', async () => {
   const setView = vi.fn();
   const setTrackMute = vi.fn();
   const setTrackSolo = vi.fn();
+  const setMetronome = vi.fn();
+  const setCountIn = vi.fn();
   const player = {
     play: vi.fn(),
     pause: vi.fn(),
@@ -218,11 +220,15 @@ test('offers the views and track controls of the renderer', async () => {
     setLoop: vi.fn(),
     setTrackMute,
     setTrackSolo,
+    setMetronome,
+    setCountIn,
     onStateChange: vi.fn((cb: (state: object) => void) =>
       cb({
         playing: false,
         speed: 1,
         loop: false,
+        metronome: false,
+        countIn: true,
         tracks: [
           { name: 'Guitar', muted: false, solo: false },
           { name: '', muted: true, solo: false },
@@ -262,6 +268,12 @@ test('offers the views and track controls of the renderer', async () => {
   fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
   fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Mute Track 2' }));
   expect(setTrackMute).toHaveBeenCalledWith(1, false);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Metronome' }));
+  expect(setMetronome).toHaveBeenCalledWith(true);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Count-in' }));
+  expect(setCountIn).toHaveBeenCalledWith(false);
 });
 
 test('a failed export says why', async () => {

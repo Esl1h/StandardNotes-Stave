@@ -172,6 +172,31 @@ for (const opaqueOrigin of [false, true]) {
   });
 }
 
+test('plays with the metronome and a count-in', async ({ page }) => {
+  const plugin = await openHost(page, { text: `${HEADER}0.3.4 2.3 3.3 5.3 | 7.3.2 5.3` });
+  await expect(rendering(plugin).first()).toBeVisible();
+
+  for (const item of ['Metronome', 'Count-in']) {
+    await plugin.getByRole('menuitem', { name: 'Play' }).click();
+    await plugin.getByRole('menuitemcheckbox', { name: item }).click();
+  }
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Count-in' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  );
+  await page.keyboard.press('Escape');
+
+  await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+  const cursor = plugin.locator('.at-cursor-beat');
+  const start = await cursor.evaluate((el) => el.style.transform);
+  await expect
+    .poll(() => cursor.evaluate((el) => el.style.transform), { timeout: 15000 })
+    .not.toBe(start);
+  await expect(plugin.getByRole('alert')).toHaveCount(0);
+  await plugin.getByRole('button', { name: 'Stop' }).click();
+});
+
 test('mutes and solos a track from the Play menu', async ({ page }) => {
   const plugin = await openHost(page, { text: EXAMPLE });
   await expect(rendering(plugin).first()).toBeVisible();

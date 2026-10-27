@@ -124,7 +124,14 @@ function once<T>(
 }
 
 class AlphaTexPlayer implements Player {
-  private state: PlayerState = { playing: false, speed: 1, loop: false, tracks: [] };
+  private state: PlayerState = {
+    playing: false,
+    speed: 1,
+    loop: false,
+    tracks: [],
+    metronome: false,
+    countIn: false,
+  };
   private listeners: Array<(state: PlayerState) => void> = [];
 
   constructor(private api: alphaTab.AlphaTabApi) {
@@ -178,6 +185,7 @@ class AlphaTexPlayer implements Player {
     }
     api.playbackSpeed = this.state.speed;
     api.isLooping = this.state.loop;
+    this.applyClicks();
     if (!api.play()) {
       this.emit({ playing: false });
       throw new Error('The player is not ready.');
@@ -201,6 +209,23 @@ class AlphaTexPlayer implements Player {
   setLoop(loop: boolean) {
     this.api.isLooping = loop;
     this.emit({ loop });
+  }
+
+  /** alphaTab plays a click and a count-in when their volume is above zero. */
+  private applyClicks() {
+    if (!this.api.player) return;
+    this.api.metronomeVolume = this.state.metronome ? 1 : 0;
+    this.api.countInVolume = this.state.countIn ? 1 : 0;
+  }
+
+  setMetronome(metronome: boolean) {
+    this.emit({ metronome });
+    this.applyClicks();
+  }
+
+  setCountIn(countIn: boolean) {
+    this.emit({ countIn });
+    this.applyClicks();
   }
 
   private setTrack(index: number, change: { muted?: boolean; solo?: boolean }) {
