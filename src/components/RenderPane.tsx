@@ -130,7 +130,8 @@ function RenderPane(props: RenderPaneProps) {
   }, [instance, highlight]);
 
   return (
-    <div className="render-scroll" ref={paneRef}>
+    // Focusable, so the keyboard can scroll a drawing wider or taller than the pane.
+    <div className="render-scroll" ref={paneRef} tabIndex={0} role="region" aria-label="Rendering">
       {!engine && <p className="render-status">No notation engine is available.</p>}
       {loadError && (
         <p className="render-status render-error" role="alert">

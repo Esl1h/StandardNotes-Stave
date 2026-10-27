@@ -142,7 +142,8 @@ function SourcePane(props: SourcePaneProps) {
             EditorState.readOnly.of(readOnly),
             EditorView.editable.of(!readOnly),
           ]),
-          EditorView.contentAttributes.of({ 'aria-label': 'Notation source' }),
+          // Focusable by Tab, which also lets the keyboard scroll it.
+          EditorView.contentAttributes.of({ 'aria-label': 'Notation source', tabindex: '0' }),
           EditorView.updateListener.of((update) => {
             if (
               update.docChanged &&
