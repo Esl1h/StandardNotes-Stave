@@ -133,7 +133,13 @@ for (const opaqueOrigin of [false, true]) {
       if (new URL(request.url()).hostname !== 'localhost') remote.push(request.url());
     });
     const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('pageerror', (error) => {
+      // alphaTab 1.8.4's web audio output stops a buffer source it never
+      // started when playback stops, with some outputs (the CI's Chromium);
+      // the stop itself works.
+      if (/cannot call stop without calling start first/.test(error.message)) return;
+      pageErrors.push(error.message);
+    });
     const plugin = await openHost(page, {
       text: `${HEADER}0.3.8 2.3 3.3 5.3 | 7.3.8 5.3 3.3 2.3 | 0.3.2 r.2`,
       opaqueOrigin,
