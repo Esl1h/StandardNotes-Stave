@@ -8,6 +8,7 @@ import { openHost } from './snHost.js';
 const EXAMPLES = {
   ABC: readFileSync('examples/abc.abc', 'utf8'),
   alphaTex: readFileSync('examples/alphatex.atex', 'utf8'),
+  ChordPro: readFileSync('examples/chordpro.pro', 'utf8'),
 };
 
 // What a dark theme from the app does: redefine the stylekit variables.
@@ -39,7 +40,9 @@ for (const [name, text] of Object.entries(EXAMPLES)) {
   for (const dark of [false, true]) {
     test(`${name}${dark ? ' on a dark theme' : ''}: no WCAG violations`, async ({ page }) => {
       const plugin = await openHost(page, { text });
-      await expect(plugin.locator('.render-target svg').first()).toBeVisible();
+      await expect(
+        plugin.locator('.render-target :is(svg, .chordpro-sheet)').first()
+      ).toBeVisible();
       if (dark) {
         await plugin.locator('body').evaluate((body, css) => {
           const style = document.createElement('style');
