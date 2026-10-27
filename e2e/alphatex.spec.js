@@ -330,3 +330,22 @@ test('says why a file cannot be imported', async ({ page }) => {
   await expect(plugin.getByRole('alert')).toContainText('Import failed');
   expect(await hostLogs(page, 'save-items')).toEqual([]);
 });
+
+test('prints the score alone, black on white', async ({ page }) => {
+  const plugin = await openHost(page, { text: EXAMPLE });
+  await expect(rendering(plugin).first()).toBeVisible();
+  await plugin.locator('body').evaluate(() => {
+    window.printed = 0;
+    window.print = () => window.printed++;
+  });
+
+  await plugin.getByRole('menuitem', { name: 'File' }).click();
+  await plugin.getByRole('menuitem', { name: 'Print or PDF' }).click();
+
+  await expect.poll(() => plugin.locator('body').evaluate(() => window.printed)).toBe(1);
+  const sheet = plugin.locator('.print-sheet img');
+  expect(await sheet.evaluate((img) => img.naturalWidth)).toBeGreaterThan(100);
+  await page.emulateMedia({ media: 'print' });
+  await expect(sheet).toBeVisible();
+  await expect(plugin.locator('.panes')).toBeHidden();
+});

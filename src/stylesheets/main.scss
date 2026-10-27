@@ -540,3 +540,23 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
     position: absolute;
   }
 }
+
+// Printing shows the score alone, black on white, as File > Print draws it.
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  .workspace > :not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block;
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+  }
+}

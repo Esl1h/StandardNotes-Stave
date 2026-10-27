@@ -103,6 +103,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
   const viewRef = useRef<EditorView | null>(null);
   const importRef = useRef<HTMLInputElement | null>(null);
   const [importer, setImporter] = useState<Engine>();
+  // The rendering as an SVG image, shown only on paper while printing.
+  const [printSheet, setPrintSheet] = useState<string>();
 
   const engine: Engine | undefined = useMemo(() => {
     const chosen = override?.epoch === epoch ? engineById(override.id) : undefined;
@@ -190,6 +192,26 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
       setFailure({ instance, message: `Import failed: ${(error as Error).message}` });
     }
   };
+
+  const print = async () => {
+    if (!instance?.export) return;
+    setFailure(undefined);
+    try {
+      setPrintSheet(URL.createObjectURL(await instance.export('svg')));
+    } catch (error) {
+      setFailure({ instance, message: `Printing failed: ${(error as Error).message}` });
+    }
+  };
+
+  useEffect(() => {
+    if (!printSheet) return;
+    const done = () => setPrintSheet(undefined);
+    window.addEventListener('afterprint', done);
+    return () => {
+      window.removeEventListener('afterprint', done);
+      URL.revokeObjectURL(printSheet);
+    };
+  }, [printSheet]);
 
   const chooseEngine = (id: string) => {
     const next = engineById(id);
@@ -325,6 +347,9 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           shortcut: index === 0 ? `${ctrl}Shift+E` : undefined,
           onSelect: () => void exportAs(fmt),
         })),
+        ...(instance?.exportFormats?.includes('svg')
+          ? [{ label: 'Print or PDF', onSelect: () => void print() }]
+          : []),
       ],
     },
     {
@@ -837,6 +862,11 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           if (file && importer) void importFile(importer, file);
         }}
       />
+      {printSheet && (
+        <div className="print-sheet">
+          <img src={printSheet} alt="" onLoad={() => window.print()} />
+        </div>
+      )}
       {typeof dialog === 'object' && dialog && 'replaceWith' in dialog && (
         <Dialog
           title={`Replace the note with ${dialog.replaceWith.file}?`}
