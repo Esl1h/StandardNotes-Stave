@@ -6,6 +6,7 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronUp,
+  Music,
   Pause,
   Play,
   Repeat,
@@ -87,6 +88,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     state: STOPPED,
   });
   const [dialog, setDialog] = useState<DialogName | null>(null);
+  // With the bars hidden (phones), the tools open in a drawer at the bottom.
+  const [drawer, setDrawer] = useState(false);
   // What last failed on this instance (playback, export), shown above the panes.
   const [failure, setFailure] = useState<{ instance: EngineInstance; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
@@ -653,6 +656,19 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         <div className="menu-bar collapsed">
           {playback}
           <div className="spacer" />
+          {engine && editable && (
+            <button
+              type="button"
+              className={`icon-button${drawer ? ' active' : ''}`}
+              aria-label="Insert"
+              aria-expanded={drawer}
+              aria-controls="insert-drawer"
+              title="Insert notes and symbols"
+              onClick={() => setDrawer(!drawer)}
+            >
+              <Music size={16} />
+            </button>
+          )}
           {engineSelect}
           <button
             type="button"
@@ -703,6 +719,29 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
         </p>
       )}
       <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>
+      {drawer && !prefs.menuBar && engine && editable && (
+        <div className="insert-drawer" id="insert-drawer" role="region" aria-label="Insert">
+          <Toolbar
+            tools={engine.tools()}
+            editable={editable}
+            onTool={applyCmd}
+            trailing={
+              <>
+                {transposeTools}
+                <button
+                  type="button"
+                  className="tool"
+                  aria-label="Close the drawer"
+                  title="Close the drawer"
+                  onClick={() => setDrawer(false)}
+                >
+                  <ChevronDown size={16} />
+                </button>
+              </>
+            }
+          />
+        </div>
+      )}
       {dialog === 'cheatsheet' && engine && (
         <Dialog title={`${engine.label} cheat sheet`} onClose={() => setDialog(null)}>
           {engine.cheatsheet().map((section) => (

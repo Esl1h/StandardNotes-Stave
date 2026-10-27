@@ -54,3 +54,31 @@ test('a phone starts with the bars collapsed', async ({ page }) => {
   await expect(plugin.getByRole('button', { name: 'Show the bars' })).toBeVisible();
   await expect(plugin.getByRole('menubar')).toHaveCount(0);
 });
+
+test('a phone inserts notes from a drawer', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 760 });
+  const plugin = await openHost(page, {
+    text: 'X:1\nL:1/8\nK:C\nC',
+    platform: 'android',
+    environment: 'mobile',
+  });
+  await plugin.locator('.cm-content').click();
+  await page.keyboard.press('Control+End');
+
+  await plugin.getByRole('button', { name: 'Insert' }).click();
+  const drawer = plugin.getByRole('region', { name: 'Insert' });
+  await expect(drawer).toBeVisible();
+  // It sits below the panes and fits the screen.
+  const box = await drawer.boundingBox();
+  expect(box.width).toBeLessThanOrEqual(390);
+  expect(box.y + box.height).toBeLessThanOrEqual(760);
+
+  await drawer.getByRole('button', { name: 'Quarter note' }).click();
+  await drawer.getByRole('button', { name: 'Bar line', exact: true }).click();
+  await expect
+    .poll(async () => (await hostLogs(page, 'save-items')).map((entry) => entry.text).pop())
+    .toBe('X:1\nL:1/8\nK:C\nCC2 |');
+
+  await drawer.getByRole('button', { name: 'Close the drawer' }).click();
+  await expect(drawer).toHaveCount(0);
+});

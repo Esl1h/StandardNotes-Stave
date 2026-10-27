@@ -242,6 +242,17 @@ select {
   padding: 2px 4px;
 }
 
+.insert-drawer {
+  border-top: 1px solid var(--sn-stylekit-border-color);
+  flex: none;
+  max-height: 40%;
+  overflow-y: auto;
+
+  .toolbar {
+    border-bottom: none;
+  }
+}
+
 .toolbar-show {
   @extend %ghost-button;
   align-self: center;
