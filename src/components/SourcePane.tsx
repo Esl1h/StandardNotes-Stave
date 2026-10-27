@@ -49,7 +49,7 @@ const sourceTheme = EditorView.theme({
     backgroundColor:
       'var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color))',
     borderRight: '1px solid var(--sn-stylekit-border-color)',
-    color: 'var(--sn-stylekit-neutral-color)',
+    color: 'var(--stave-muted-color)',
   },
   // The native caret and selection: CodeMirror's base theme paints the
   // caret black, lost on a dark theme, and StyleKit has no translucent
@@ -64,14 +64,20 @@ const sourceTheme = EditorView.theme({
 });
 
 // Token colors from the theme variables, so they read well in every theme.
+// Green and orange are too light for text on a light background, so they
+// lean toward the theme's text color: darker on light themes, lighter on
+// dark ones.
+const toText = (color: string) =>
+  `color-mix(in srgb, var(${color}) 55%, var(--sn-stylekit-foreground-color))`;
+
 const highlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--sn-stylekit-info-color)', fontWeight: '600' },
-  { tag: [tags.meta, tags.comment], color: 'var(--sn-stylekit-neutral-color)' },
+  { tag: [tags.meta, tags.comment], color: 'var(--stave-muted-color)' },
   { tag: tags.comment, fontStyle: 'italic' },
-  { tag: tags.string, color: 'var(--sn-stylekit-success-color)' },
-  { tag: tags.attributeName, color: 'var(--sn-stylekit-warning-color)' },
+  { tag: tags.string, color: toText('--sn-stylekit-success-color') },
+  { tag: tags.attributeName, color: toText('--sn-stylekit-warning-color') },
   { tag: tags.operator, color: 'var(--sn-stylekit-info-color)' },
-  { tag: [tags.number, tags.atom, tags.punctuation], color: 'var(--sn-stylekit-neutral-color)' },
+  { tag: [tags.number, tags.atom, tags.punctuation], color: 'var(--stave-muted-color)' },
 ]);
 
 /** The single change turning `from` into `to`, trimmed to what differs, so
@@ -136,7 +142,8 @@ function SourcePane(props: SourcePaneProps) {
             EditorState.readOnly.of(readOnly),
             EditorView.editable.of(!readOnly),
           ]),
-          EditorView.contentAttributes.of({ 'aria-label': 'Notation source' }),
+          // Focusable by Tab, which also lets the keyboard scroll it.
+          EditorView.contentAttributes.of({ 'aria-label': 'Notation source', tabindex: '0' }),
           EditorView.updateListener.of((update) => {
             if (
               update.docChanged &&

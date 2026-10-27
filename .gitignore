@@ -129,6 +129,9 @@ dist
 .yalc
 yalc.lock
 
+# Vitest's run cache
+.vitest/
+
 # playwright
 test-results/
 playwright-report/

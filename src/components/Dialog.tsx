@@ -45,7 +45,10 @@ function Dialog({ title, onClose, children, actions }: DialogProps) {
             <X size={16} />
           </button>
         </header>
-        <div className="dialog-body">{children}</div>
+        {/* Focusable, so the keyboard can scroll a long cheat sheet. */}
+        <div className="dialog-body" tabIndex={0}>
+          {children}
+        </div>
         <footer className="dialog-actions">
           {actions ?? (
             <button type="button" onClick={onClose}>
