@@ -1,4 +1,4 @@
-import{n as e,t}from"./index-YE6JCBmW.js";var n=`stave-highlight`,r={chorus:`Chorus`,verse:`Verse`,bridge:`Bridge`,tab:`Tab`,grid:`Grid`},i=[[`key`,`Key`],[`capo`,`Capo`],[`tempo`,`Tempo`],[`time`,`Time`],[`duration`,`Duration`]],a=`
+import{n as e,t}from"./index-CbmlekdN.js";var n=`stave-highlight`,r={chorus:`Chorus`,verse:`Verse`,bridge:`Bridge`,tab:`Tab`,grid:`Grid`},i=[[`key`,`Key`],[`capo`,`Capo`],[`tempo`,`Tempo`],[`time`,`Time`],[`duration`,`Duration`]],a=`
 .chordpro-sheet { color: var(--cp-text); font-family: var(--sn-stylekit-sans-serif-font, sans-serif); line-height: 1.3; }
 .chordpro-sheet h1 { font-size: 1.6em; margin: 0 0 0.1em; }
 .chordpro-sheet .cp-subtitle, .chordpro-sheet .cp-artist { margin: 0; color: var(--cp-muted); }
