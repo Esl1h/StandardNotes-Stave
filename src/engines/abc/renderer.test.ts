@@ -191,3 +191,17 @@ test('redraws with a new theme and zoom', async () => {
 
   expect(el.innerHTML).toContain('#abcdef');
 });
+
+test('lays out one system across, and pages again', async () => {
+  const el = document.createElement('div');
+  const instance = await mountAbc(el, { theme, zoom: 1, layout: 'horizontal' });
+  // Two sections around a text line, each one line; on a page, two each.
+  await instance.render('X:1\nL:1/4\nK:C\nCDEF|\nGABc|\n%%text a line of text\nCDEF|\nGABc|]\n');
+  expect(el.querySelector('.abcjs-l2')).not.toBeNull();
+  expect(el.querySelector('.abcjs-l3')).toBeNull();
+  expect(el.classList.contains('layout-horizontal')).toBe(true);
+
+  instance.setLayout!('page');
+  expect(el.querySelector('.abcjs-l4')).not.toBeNull();
+  expect(el.classList.contains('layout-horizontal')).toBe(false);
+});
