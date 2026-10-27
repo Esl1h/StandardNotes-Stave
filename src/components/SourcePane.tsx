@@ -49,8 +49,21 @@ const sourceTheme = EditorView.theme({
     backgroundColor:
       'var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color))',
     borderRight: '1px solid var(--sn-stylekit-border-color)',
-    color: 'var(--stave-muted-color)',
+    // Grayer than the muted text, at the least contrast small text may have.
+    color:
+      'color-mix(in srgb, var(--sn-stylekit-foreground-color) 55%, var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color)))',
+    fontSize: '0.8em',
   },
+  // The line height of the content (1.4) at the gutter's smaller font, so
+  // each number sits on its line.
+  '.cm-lineNumbers .cm-gutterElement': {
+    lineHeight: '1.75',
+    minWidth: '0',
+    padding: '0 2px 0 4px',
+  },
+  '.cm-gutter-lint': { width: '1em' },
+  '.cm-gutter-lint .cm-gutterElement': { padding: '0.15em 0.1em' },
+  '.cm-gutter-lint .cm-lint-marker': { width: '0.8em', height: '0.8em' },
   // The native caret and selection: CodeMirror's base theme paints the
   // caret black, lost on a dark theme, and StyleKit has no translucent
   // accent to select with.

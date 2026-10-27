@@ -20,7 +20,13 @@ import {
   type PlayerState,
   type SourceError,
 } from '../core/engine';
-import { clampZoom, readPreferences, writePreference, type Preferences } from '../core/preferences';
+import {
+  clampSplit,
+  clampZoom,
+  readPreferences,
+  writePreference,
+  type Preferences,
+} from '../core/preferences';
 import { themeColors, watchTheme } from '../core/theme';
 import { shortcutFor, SHORTCUT_HELP, type ShortcutAction } from '../core/shortcuts';
 import { downloadFile, fileNameFor } from '../core/download';
@@ -684,14 +690,49 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     </div>
   );
 
+  // Dragged live, saved once on release.
+  const moveDivider = (event: React.PointerEvent<HTMLDivElement>) => {
+    const divider = event.currentTarget;
+    if (!divider.hasPointerCapture(event.pointerId)) return;
+    const box = (divider.parentElement as HTMLElement).getBoundingClientRect();
+    const across = divider.offsetHeight > divider.offsetWidth;
+    const split = across
+      ? (event.clientX - box.left) / box.width
+      : (event.clientY - box.top) / box.height;
+    setPrefs((current) => ({ ...current, split: clampSplit(split) }));
+  };
+
+  const divider = (
+    <div
+      className="pane-divider"
+      key="divider"
+      role="separator"
+      aria-label="Resize the panes"
+      aria-orientation={prefs.orientation === 'side' ? 'vertical' : 'horizontal'}
+      aria-valuenow={Math.round(prefs.split * 100)}
+      aria-valuemin={15}
+      aria-valuemax={85}
+      tabIndex={0}
+      onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+      onPointerMove={moveDivider}
+      onPointerUp={() => writePreference('split', prefs.split)}
+      onKeyDown={(event) => {
+        const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
+        if (step === undefined) return;
+        event.preventDefault();
+        setPref('split', clampSplit(prefs.split + step * 0.05));
+      }}
+    />
+  );
+
   const panes =
     prefs.view === 'source'
       ? [source]
       : prefs.view === 'render'
         ? [rendering]
         : prefs.swapped
-          ? [rendering, source]
-          : [source, rendering];
+          ? [rendering, divider, source]
+          : [source, divider, rendering];
 
   return (
     <div className={`workspace view-${prefs.view}`}>
@@ -779,7 +820,17 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           {failure.message}
         </p>
       )}
-      <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>
+      <div
+        className={`panes orientation-${prefs.orientation} count-${panes.length > 1 ? 2 : 1}`}
+        style={
+          {
+            '--first': `${prefs.split}fr`,
+            '--second': `${1 - prefs.split}fr`,
+          } as React.CSSProperties
+        }
+      >
+        {panes}
+      </div>
       {drawer && !prefs.menuBar && engine && editable && (
         <div className="insert-drawer" id="insert-drawer" role="region" aria-label="Insert">
           <Toolbar

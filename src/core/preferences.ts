@@ -24,6 +24,8 @@ export interface Preferences {
   orientation: Orientation;
   /** Render pane first (left or top). */
   swapped: boolean;
+  /** The share of the first pane in the split view. */
+  split: number;
   menuBar: boolean;
   toolbar: boolean;
   zoom: number;
@@ -39,6 +41,8 @@ const ORIENTATIONS = ['side', 'stacked'] as const;
 const LAYOUTS = ['page', 'horizontal'] as const;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2;
+const SPLIT_MIN = 0.15;
+const SPLIT_MAX = 0.85;
 
 const STORAGE_PREFIX = 'standardnotes-stave';
 
@@ -90,10 +94,20 @@ const flag = (fallback: boolean) => ({
 export const clampZoom = (zoom: number) =>
   Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(zoom * 10) / 10));
 
+export const clampSplit = (split: number) =>
+  Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, Math.round(split * 1000) / 1000));
+
 const codecs = {
   view: oneOf(VIEWS, 'split'),
   orientation: oneOf(ORIENTATIONS, 'side'),
   swapped: flag(false),
+  split: {
+    parse: (raw: string | null) => {
+      const split = Number(raw);
+      return raw !== null && Number.isFinite(split) ? clampSplit(split) : 0.5;
+    },
+    format: (value: number) => String(value),
+  },
   menuBar: flag(true),
   toolbar: flag(true),
   zoom: {
@@ -123,6 +137,7 @@ const KEYS: Record<keyof Preferences, string> = {
   view: 'view',
   orientation: 'orientation',
   swapped: 'swapped',
+  split: 'split',
   menuBar: 'menu-bar',
   toolbar: 'toolbar',
   zoom: 'zoom',
