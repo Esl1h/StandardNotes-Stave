@@ -293,6 +293,30 @@ select {
 // background, so the neutral gray of the theme draws the line instead.
 $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%, transparent);
 
+// A 1px line in a 7px grip that overlaps the edges of the panes.
+@mixin divider($direction) {
+  @if $direction == vertical {
+    cursor: col-resize;
+    margin: 0 -3px;
+    width: 7px;
+
+    &::before {
+      border-left: $pane-divider;
+      inset: 0 auto 0 3px;
+    }
+  } @else {
+    cursor: row-resize;
+    height: 7px;
+    margin: -3px 0;
+    width: auto;
+
+    &::before {
+      border-top: $pane-divider;
+      inset: 3px 0 auto;
+    }
+  }
+}
+
 .panes {
   display: grid;
   flex: 1 1 auto;
@@ -303,19 +327,39 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
   }
 
   &.count-2.orientation-side {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, var(--first)) auto minmax(0, var(--second));
 
-    .pane + .pane {
-      border-left: $pane-divider;
+    .pane-divider {
+      @include divider(vertical);
     }
   }
 
   &.count-2.orientation-stacked {
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, var(--first)) auto minmax(0, var(--second));
 
-    .pane + .pane {
-      border-top: $pane-divider;
+    .pane-divider {
+      @include divider(horizontal);
     }
+  }
+}
+
+.pane-divider {
+  position: relative;
+  touch-action: none;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    border-color: var(--sn-stylekit-info-color);
+  }
+
+  &:focus-visible {
+    outline: none;
   }
 }
 
@@ -486,11 +530,14 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
 @media (max-width: 640px) {
   .panes.count-2.orientation-side {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 40%) minmax(0, 60%);
+    grid-template-rows: minmax(0, var(--first)) auto minmax(0, var(--second));
 
-    .pane + .pane {
-      border-left: none;
-      border-top: $pane-divider;
+    .pane-divider {
+      @include divider(horizontal);
+
+      &::before {
+        border-left: none;
+      }
     }
   }
 

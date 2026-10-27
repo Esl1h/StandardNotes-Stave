@@ -72,7 +72,27 @@ test('the caret, the selection and the pane divider show on a dark theme', async
 
   // The border color of a dark theme is the background; the divider is not.
   const divider = await plugin
-    .locator('.render-pane')
-    .evaluate((el) => getComputedStyle(el).borderLeftColor);
+    .locator('.pane-divider')
+    .evaluate((el) => getComputedStyle(el, '::before').borderLeftColor);
   expect(divider).toBe('color(srgb 0.627451 0.627451 0.627451 / 0.5)');
+});
+
+test('the pane divider drags and keeps its place', async ({ page }) => {
+  const plugin = await openHost(page, { text: 'x' });
+  const divider = plugin.getByRole('separator', { name: 'Resize the panes' });
+  const panes = await plugin.locator('.panes').boundingBox();
+  const grip = await divider.boundingBox();
+
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(panes.x + panes.width * 0.3, grip.y + grip.height / 2, { steps: 5 });
+  await page.mouse.up();
+
+  const source = await plugin.locator('.source-pane').boundingBox();
+  expect(source.width / panes.width).toBeCloseTo(0.3, 1);
+  await expect.poll(() => page.evaluate(() => window.componentData.split)).toBe('0.3');
+
+  await divider.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(divider).toHaveAttribute('aria-valuenow', '35');
 });

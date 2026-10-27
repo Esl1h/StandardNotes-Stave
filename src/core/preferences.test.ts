@@ -25,6 +25,7 @@ test('falls back to the defaults when nothing is stored', () => {
     view: 'split',
     orientation: 'side',
     swapped: false,
+    split: 0.5,
     menuBar: true,
     toolbar: true,
     zoom: 1,
@@ -62,6 +63,13 @@ test('ignores values it does not know', () => {
   expect(readPreference('layout')).toBe('page');
   expect(readPreference('zoom')).toBe(1);
   expect(readPreference('toolbar')).toBe(true);
+});
+
+test('keeps the split within its range', () => {
+  setPreferenceStore(memoryStore({ split: '0.99' }));
+  expect(readPreference('split')).toBe(0.85);
+  setPreferenceStore(memoryStore({ split: 'wide' }));
+  expect(readPreference('split')).toBe(0.5);
 });
 
 test('keeps the zoom within its range', () => {
