@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-27
+
+### Fixed
+
+- **abc:** Read warning text with an inert parser
+
+### Documentation
+
+- Show the OpenSSF Best Practices badge
+
 ## [1.0.0] - 2026-10-27
 
 ### Added
