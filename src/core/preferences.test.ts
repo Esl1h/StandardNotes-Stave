@@ -29,6 +29,7 @@ test('falls back to the defaults when nothing is stored', () => {
     toolbar: true,
     zoom: 1,
     defaultEngine: '',
+    renderView: '',
   });
 });
 

@@ -12,7 +12,8 @@ Decisions that shape how this plugin is built and released, one file each, in th
 8. [Notation engines and libraries](0008-notation-engines-and-libraries.md)
 9. [One engine interface, one chunk per engine](0009-engine-interface.md)
 10. [Detect the engine from the note text](0010-engine-detection.md)
-11. [Ship every asset with the build](0011-offline-assets.md)
+11. [Ship every asset with the build](0011-offline-assets.md), its workers from a blob since 15
 12. [Build the UI on the patterns of the Milkdown plugin](0012-ui-from-the-milkdown-plugin.md)
 13. [A bundle budget, reported at every milestone](0013-bundle-budget.md)
 14. [Play ABC with piano samples shipped in the build](0014-abc-playback-samples.md)
+15. [Run alphaTab in the Standard Notes iframe](0015-alphatab-in-the-standard-notes-iframe.md)

@@ -88,7 +88,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     state: STOPPED,
   });
   const [dialog, setDialog] = useState<DialogName | null>(null);
-  const [playFailure, setPlayFailure] = useState<{ instance: EngineInstance; message: string }>();
+  // What last failed on this instance (playback, export), shown above the panes.
+  const [failure, setFailure] = useState<{ instance: EngineInstance; message: string }>();
   const viewRef = useRef<EditorView | null>(null);
 
   const engine: Engine | undefined = useMemo(() => {
@@ -171,16 +172,25 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     if (!active) return;
     if (player.playing) active.pause();
     else {
-      setPlayFailure(undefined);
-      active.play().catch((error: Error) => setPlayFailure({ instance, message: error.message }));
+      setFailure(undefined);
+      active
+        .play()
+        .catch((error: Error) =>
+          setFailure({ instance, message: `Playback failed: ${error.message}` })
+        );
     }
   }, [instance, player.playing]);
 
   const exportAs = useCallback(
     async (fmt: ExportFormat) => {
       if (!engine || !instance?.export) return;
-      const blob = await instance.export(fmt);
-      downloadFile(blob, fileNameFor(engine.title(rawText), EXPORT_EXTENSIONS[fmt]));
+      setFailure(undefined);
+      try {
+        const blob = await instance.export(fmt);
+        downloadFile(blob, fileNameFor(engine.title(rawText), EXPORT_EXTENSIONS[fmt]));
+      } catch (error) {
+        setFailure({ instance, message: `Export failed: ${(error as Error).message}` });
+      }
     },
     [engine, instance, rawText]
   );
@@ -328,6 +338,16 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           label: `Reset zoom (${Math.round(prefs.zoom * 100)}%)`,
           onSelect: () => setPref('zoom', 1),
         },
+        ...(instance?.views?.length
+          ? [
+              'separator' as const,
+              ...instance.views.map((each) =>
+                check(each.label, (prefs.renderView || instance.views?.[0].id) === each.id, () =>
+                  setPref('renderView', each.id)
+                )
+              ),
+            ]
+          : []),
         'separator',
         check('Toolbar', prefs.toolbar, () => setPref('toolbar', !prefs.toolbar)),
         {
@@ -355,6 +375,22 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
             instance?.player?.setSpeed(speed)
           )
         ),
+        ...(player.tracks?.length
+          ? [
+              'separator' as const,
+              ...player.tracks.flatMap((track, index) => {
+                const name = track.name || `Track ${index + 1}`;
+                return [
+                  check(`Mute ${name}`, track.muted, () =>
+                    instance?.player?.setTrackMute?.(index, !track.muted)
+                  ),
+                  check(`Solo ${name}`, track.solo, () =>
+                    instance?.player?.setTrackSolo?.(index, !track.solo)
+                  ),
+                ];
+              }),
+            ]
+          : []),
       ],
     },
     {
@@ -497,6 +533,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           src={rawText}
           theme={theme}
           zoom={prefs.zoom}
+          view={prefs.renderView}
           highlight={selection}
           onErrors={(list) => setReported({ engine, errors: list })}
           onInstance={setInstance}
@@ -593,9 +630,9 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           This note is locked: it can be read and played, not edited.
         </p>
       )}
-      {playFailure && playFailure.instance === instance && (
-        <p className="play-error" role="alert">
-          Playback failed: {playFailure.message}
+      {failure && failure.instance === instance && (
+        <p className="action-error" role="alert">
+          {failure.message}
         </p>
       )}
       <div className={`panes orientation-${prefs.orientation} count-${panes.length}`}>{panes}</div>

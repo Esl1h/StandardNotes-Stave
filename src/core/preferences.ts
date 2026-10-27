@@ -27,6 +27,8 @@ export interface Preferences {
   zoom: number;
   /** Engine id for notes whose text matches no engine. */
   defaultEngine: string;
+  /** How the rendering shows the music (score, tab), as the engine names it. */
+  renderView: string;
 }
 
 const VIEWS = ['split', 'source', 'render'] as const;
@@ -101,6 +103,10 @@ const codecs = {
     parse: (raw: string | null) => raw ?? '',
     format: (value: string) => value,
   },
+  renderView: {
+    parse: (raw: string | null) => raw ?? '',
+    format: (value: string) => value,
+  },
 } satisfies {
   [K in keyof Preferences]: {
     parse: (raw: string | null) => Preferences[K];
@@ -116,6 +122,7 @@ const KEYS: Record<keyof Preferences, string> = {
   toolbar: 'toolbar',
   zoom: 'zoom',
   defaultEngine: 'default-engine',
+  renderView: 'render-view',
 };
 
 export function readPreference<K extends keyof Preferences>(key: K): Preferences[K] {

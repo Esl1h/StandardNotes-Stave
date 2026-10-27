@@ -9,7 +9,7 @@
 
 A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
 
-Stave is in early development: ABC works end to end, and more notations are coming (see [Roadmap](#roadmap)).
+Stave is in early development: ABC and alphaTex work end to end, and more is coming (see [Roadmap](#roadmap)).
 
 ![Stave editing an ABC tune, light theme](.github/screenshots/stave-abc-light.png)
 
@@ -26,6 +26,17 @@ Stave is in early development: ABC works end to end, and more notations are comi
 - Transpose the source a semitone at a time (key signature included)
 - Export SVG, PNG and MIDI, or download the `.abc` source
 - Syntax highlighting, completion of header fields, and a cheat sheet in the Help menu
+
+### alphaTex
+
+- Standard notation and guitar tablature with [alphaTab](https://www.alphatab.net), several tracks with their own tunings, shown as score, tab or both (View menu)
+- Parser errors underlined in the source at their line and column; the last good rendering stays while you fix them
+- A toolbar for durations, rests, dots, ties, bar lines, repeats, chord symbols and techniques (bend, slide, hammer-on, palm mute, harmonic, vibrato, dead note); sharp and flat move a fret up or down
+- Click a beat in the rendering to select it in the source; the beat at the cursor is marked in the rendering
+- Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, and mute or solo per track (Play menu)
+- Transpose the source a semitone at a time: frets, pitch names, key signature and chord symbols
+- Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, or download the `.atex` source
+- Syntax highlighting, completion of metadata tags, and a cheat sheet in the Help menu
 
 ### Editor
 
@@ -85,6 +96,16 @@ K:G
 |: "G"G2 BG dGBG | "C"c2 ec "G"B2 dB | "Am"A2 cA "D"F2 AF | "G"G4 z4 :|
 ```
 
+An alphaTex note is plain [alphaTex](https://www.alphatab.net/docs/alphatex/introduction), the text format of alphaTab:
+
+```
+\title "Morning Riff"
+\tempo 96
+\track "Guitar"
+\staff {score tabs}
+0.6.8 0.6 3.6 0.6 5.6.4 3.6.8 5.6 | (0.6 2.5 2.4).4{ch "E5"} 7.3{b (0 4)}.4 r.2
+```
+
 [examples/](examples) has a note for each notation, used by the tests and the screenshots.
 
 ## Compatibility
@@ -93,7 +114,7 @@ Tested with the Standard Notes web app and the desktop app. The mobile apps are 
 
 ## Privacy and network
 
-Everything is stored inside your Standard Notes note, so it is encrypted with the rest of your data. The editor has no telemetry, no analytics and no network access of its own: renderers, fonts and sounds ship with the build and nothing is fetched from a CDN. The page's Content Security Policy allows scripts and connections only from the plugin's own origin.
+Everything is stored inside your Standard Notes note, so it is encrypted with the rest of your data. The editor has no telemetry, no analytics and no network access of its own: renderers, fonts and sounds ship with the build and nothing is fetched from a CDN. The page's Content Security Policy allows scripts and connections only from the plugin's own origin, and workers only from blobs the page makes itself (alphaTab's player, see [record 15](docs/adr/0015-alphatab-in-the-standard-notes-iframe.md)).
 
 ## Development and running locally
 
@@ -157,7 +178,7 @@ The `Release` workflow fails unless the tag matches every version file. It runs 
 ## Roadmap
 
 1. ABC with abcjs: rendering, toolbar, playback, click to source, export (done)
-2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export
+2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export (done)
 3. Engine detection and switching, the full menu, mobile polish
 4. Verovio as a higher quality renderer for ABC
 5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF
@@ -170,6 +191,7 @@ The decisions behind the project are recorded in [docs/adr](docs/adr/README.md).
 - Built on [Standard Notes](https://standardnotes.com) and its [component relay](https://github.com/standardnotes/component-relay) (AGPL-3.0), copied into `src/vendor/`
 - Editor: [CodeMirror](https://codemirror.net) (MIT); icons: [Lucide](https://lucide.dev) (ISC)
 - ABC rendering and playback: [abcjs](https://github.com/paulrosen/abcjs) (MIT)
+- alphaTex rendering and playback: [alphaTab](https://github.com/CoderLine/alphaTab) (MPL-2.0), with the [Bravura](https://github.com/steinbergmedia/bravura) music font (SIL OFL 1.1) and the Sonivox SoundFont (Apache-2.0), both shipped with their licenses in `font/` and `soundfont/`
 - Piano samples: the Fluid R3 GM SoundFont (CC BY 3.0), rendered to MP3 by [midi-js-soundfonts](https://github.com/paulrosen/midi-js-soundfonts) (MIT); see `public/soundfont/README.md`
 - `THIRD_PARTY_LICENSES.md`, shipped next to the built page, lists every bundled dependency with its license
 - Licensed under [AGPL-3.0](LICENSE) or later
