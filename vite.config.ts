@@ -7,6 +7,13 @@ import { defineConfig } from 'vitest/config';
 // eval, no remote scripts. Styles, fonts and images stay open, because the
 // host injects its theme stylesheet from wherever the app keeps themes.
 const CONTENT_SECURITY_POLICY = [
+  // Anything not named below: frames, media, manifests, workers' imports.
+  "default-src 'self'",
+  // Open for the themes the app injects and the images notes link to
+  // (docs/adr/0005); print and SVG export use blob: and data: images.
+  "style-src * 'unsafe-inline' data: blob:",
+  'img-src * data: blob:',
+  'font-src * data:',
   "script-src 'self'",
   "connect-src 'self'",
   // alphaTab's player worker runs from a blob of its code, fetched from
