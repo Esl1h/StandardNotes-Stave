@@ -51,6 +51,6 @@ test('a phone starts with the bars collapsed', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 760 });
   const plugin = await openHost(page, { text: 'x', platform: 'android', environment: 'mobile' });
 
-  await expect(plugin.getByRole('button', { name: 'Show the menu' })).toBeVisible();
+  await expect(plugin.getByRole('button', { name: 'Show the bars' })).toBeVisible();
   await expect(plugin.getByRole('menubar')).toHaveCount(0);
 });

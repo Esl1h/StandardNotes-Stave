@@ -35,8 +35,10 @@ test('bars collapse and come back', async ({ page }) => {
 
   await plugin.getByRole('button', { name: 'Hide the bars' }).click();
   await expect(plugin.getByRole('menubar')).toHaveCount(0);
-  await plugin.getByRole('button', { name: 'Show the menu' }).click();
+  await expect(plugin.getByRole('toolbar')).toHaveCount(0);
+  await plugin.getByRole('button', { name: 'Show the bars' }).click();
   await expect(plugin.getByRole('menubar')).toBeVisible();
+  await expect(plugin.getByRole('toolbar')).toBeVisible();
 });
 
 test('a locked note can be read but not edited', async ({ page }) => {
