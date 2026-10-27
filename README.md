@@ -24,7 +24,7 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Live rendering with [abcjs](https://www.abcjs.net) as you type, with parser errors underlined in the source at their line and column
 - A toolbar for durations, rests, dots, accidentals, ties, bar lines, repeats, ornaments and chord symbols; it writes ABC at the cursor, in the unit note length of the tune
 - Click a note in the rendering to select it in the source; the note at the cursor is highlighted in the rendering
-- Playback with a cursor that follows the notes, loop and speed from 50% to 150%, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin
+- Playback with a cursor that follows the notes, loop, speed from 50% to 150%, a metronome and a count-in bar, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin (every voice plays on it)
 - Transpose the source a semitone at a time (key signature included)
 - Export SVG, PNG and MIDI, or download the `.abc` source
 - Syntax highlighting, completion of header fields, and a cheat sheet in the Help menu
@@ -35,7 +35,7 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and 
 - Parser errors underlined in the source at their line and column; the last good rendering stays while you fix them
 - A toolbar for durations, rests, dots, ties, bar lines, repeats, chord symbols and techniques (bend, slide, hammer-on, palm mute, harmonic, vibrato, dead note); sharp and flat move a fret up or down, and notes are placed on the strings of the track's tuning
 - Click a beat in the rendering to select it in the source; the beat at the cursor is marked in the rendering
-- Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, and mute or solo per track (Play menu)
+- Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, a metronome, a count-in, and mute or solo per track (Play menu)
 - Transpose the source a semitone at a time: frets (moved to another string of the track's tuning when they leave the neck), pitch names, key signature and chord symbols
 - Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, or download the `.atex` source
 - Syntax highlighting, completion of metadata tags, and a cheat sheet in the Help menu
