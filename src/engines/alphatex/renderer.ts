@@ -2,6 +2,7 @@ import * as alphaTab from '@coderline/alphatab';
 import {
   type EngineInstance,
   type ExportFormat,
+  type Layout,
   type Player,
   type PlayerState,
   type RenderOpts,
@@ -37,6 +38,11 @@ const PROFILES: Record<string, alphaTab.StaveProfile> = {
   both: alphaTab.StaveProfile.Default,
   score: alphaTab.StaveProfile.Score,
   tab: alphaTab.StaveProfile.Tab,
+};
+
+const LAYOUTS: Record<Layout, alphaTab.LayoutMode> = {
+  page: alphaTab.LayoutMode.Page,
+  horizontal: alphaTab.LayoutMode.Horizontal,
 };
 
 const url = (path: string) => new URL(path, document.baseURI).href;
@@ -334,7 +340,7 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       scale: opts.zoom * BASE_SCALE,
       // The pane has a padding of its own.
       padding: [8, 8],
-      layoutMode: alphaTab.LayoutMode.Page,
+      layoutMode: LAYOUTS[opts.layout ?? 'page'],
       staveProfile: PROFILES[view],
       resources: resources(theme),
     },
@@ -454,6 +460,12 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       if (PROFILES[id] === undefined) return;
       view = id;
       api.settings.display.staveProfile = PROFILES[view];
+      api.updateSettings();
+      if (api.score) void draw();
+    },
+    setLayout(layout) {
+      if (api.settings.display.layoutMode === LAYOUTS[layout]) return;
+      api.settings.display.layoutMode = LAYOUTS[layout];
       api.updateSettings();
       if (api.score) void draw();
     },

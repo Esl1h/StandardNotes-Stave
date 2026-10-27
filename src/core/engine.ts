@@ -51,12 +51,16 @@ export interface ThemeColors {
   danger: string;
 }
 
+/** One system after another down the page, or one long system across it. */
+export type Layout = 'page' | 'horizontal';
+
 export interface RenderOpts {
   theme: ThemeColors;
   /** 1 is the engine's natural size. */
   zoom: number;
   /** One of the instance's views, as last chosen. */
   view?: string;
+  layout?: Layout;
 }
 
 export interface SourceError {
@@ -130,6 +134,8 @@ export interface EngineInstance {
   /** The ways this instance can show the music; the first is the default. */
   views?: ViewDef[];
   setView?(id: string): void;
+  /** Present when the renderer can lay the music out in one long system. */
+  setLayout?(layout: Layout): void;
   destroy(): void;
 }
 

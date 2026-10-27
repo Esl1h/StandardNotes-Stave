@@ -184,3 +184,18 @@ test('counts in a bar and clicks the beats on the piano', async ({ page }) => {
   expect(Date.now() - started).toBeGreaterThan(500);
   await plugin.getByRole('button', { name: 'Stop' }).click();
 });
+
+test('lays the music out in one system that scrolls across', async ({ page }) => {
+  const plugin = await openHost(page, { text: EXAMPLE });
+  const scroll = plugin.locator('.render-scroll');
+  await expect(plugin.locator('.render-target svg')).toBeVisible();
+  const overflow = () => scroll.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(await overflow()).toBeLessThanOrEqual(0);
+
+  await plugin.getByRole('menuitem', { name: 'View' }).click();
+  await plugin.getByRole('menuitemcheckbox', { name: 'Horizontal layout' }).click();
+
+  await expect.poll(overflow).toBeGreaterThan(200);
+  await expect(plugin.locator('.render-target .abcjs-staff-wrapper')).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => window.componentData.layout)).toBe('horizontal');
+});

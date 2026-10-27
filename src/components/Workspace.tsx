@@ -353,6 +353,15 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
               ),
             ]
           : []),
+        ...(instance?.setLayout
+          ? [
+              'separator' as const,
+              check('Page layout', prefs.layout === 'page', () => setPref('layout', 'page')),
+              check('Horizontal layout', prefs.layout === 'horizontal', () =>
+                setPref('layout', 'horizontal')
+              ),
+            ]
+          : []),
         'separator',
         check('Toolbar', prefs.toolbar, () => setPref('toolbar', !prefs.toolbar)),
         {
@@ -561,6 +570,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           theme={theme}
           zoom={prefs.zoom}
           view={prefs.renderView}
+          layout={prefs.layout}
           highlight={selection}
           onErrors={(list) => setReported({ engine, errors: list })}
           onInstance={setInstance}

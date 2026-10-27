@@ -2,6 +2,7 @@ import abcjs, { type MidiBuffer, type TimingCallbacks, type TuneObject } from 'a
 import {
   type EngineInstance,
   type ExportFormat,
+  type Layout,
   type Player,
   type PlayerState,
   type RenderOpts,
@@ -22,6 +23,31 @@ const HIGHLIGHT = 'stave-highlight';
 const CLICK_ACCENT = 96;
 const CLICK = 91;
 const PLAYING = 'stave-playing';
+// About the width abcjs gives a bar on a page.
+const BAR_WIDTH = 150;
+
+const barsIn = (tune: TuneObject) =>
+  Math.max(
+    0,
+    ...tune.lines.flatMap((line) =>
+      (line.staff ?? []).flatMap((staff) =>
+        (staff.voices ?? []).map((voice) => voice.filter((el) => el.el_type === 'bar').length)
+      )
+    )
+  );
+
+/**
+ * abcjs options for one long system. lineBreaks lists, for each section of
+ * a tune (music between text lines), the bars to end a line on; none, and
+ * the section is one line. A section needs a line of source at least.
+ * abcjs fits the line in staffwidth, so it grows with the bars.
+ */
+function horizontal(src: string) {
+  // Typed as number[] in abcjs 6, read as one list per section.
+  const lineBreaks = src.split('\n').map(() => []) as unknown as number[];
+  const bars = Math.max(1, ...abcjs.parseOnly(src, { lineBreaks }).map(barsIn));
+  return { lineBreaks, staffwidth: bars * BAR_WIDTH };
+}
 
 /**
  * abcjs warnings as source errors. They read "Music Line:6:7: message:
@@ -302,6 +328,7 @@ async function svgToPng(svg: string): Promise<Blob> {
 export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance> {
   let theme: ThemeColors = opts.theme;
   let zoom = opts.zoom;
+  let layout: Layout = opts.layout ?? 'page';
   let src = '';
   let tunes: TuneObject[] = [];
   let onClick: ((range: [number, number]) => void) | undefined;
@@ -325,10 +352,12 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
   );
 
   const draw = (): SourceError[] => {
+    // abcjs sizes its parent to the pane and hides what overflows.
+    el.classList.toggle('layout-horizontal', layout === 'horizontal');
     tunes = abcjs.renderAbc(el, src, {
       add_classes: true,
-      responsive: 'resize',
       scale: zoom,
+      ...(layout === 'horizontal' ? horizontal(src) : { responsive: 'resize' }),
       foregroundColor: theme.foreground,
       selectionColor: theme.accent,
       clickListener: (element) => {
@@ -384,6 +413,11 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     },
     setZoom(next) {
       zoom = next;
+      if (src) draw();
+    },
+    setLayout(next) {
+      if (next === layout) return;
+      layout = next;
       if (src) draw();
     },
     destroy() {

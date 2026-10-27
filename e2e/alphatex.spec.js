@@ -243,3 +243,19 @@ test('a phone stacks the panes', async ({ page }) => {
   expect(render.y).toBeGreaterThan(source.y);
   await expect(rendering(plugin).first()).toBeVisible();
 });
+
+test('lays the music out in one system that scrolls across', async ({ page }) => {
+  const plugin = await openHost(page, { text: EXAMPLE });
+  const scroll = plugin.locator('.render-scroll');
+  await expect(rendering(plugin).first()).toBeVisible();
+  const height = await scroll.evaluate((el) => el.scrollHeight);
+
+  await plugin.getByRole('menuitem', { name: 'View' }).click();
+  await plugin.getByRole('menuitemcheckbox', { name: 'Horizontal layout' }).click();
+
+  await expect
+    .poll(() => scroll.evaluate((el) => el.scrollWidth - el.clientWidth))
+    .toBeGreaterThan(200);
+  expect(await scroll.evaluate((el) => el.scrollHeight)).toBeLessThan(height);
+  await expect.poll(() => page.evaluate(() => window.componentData.layout)).toBe('horizontal');
+});
