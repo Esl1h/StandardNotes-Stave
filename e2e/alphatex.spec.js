@@ -14,20 +14,33 @@ const lastSaved = async (page) =>
 
 const rendering = (plugin) => plugin.locator('.render-target .at-surface svg');
 
+test('an empty note opens the alphaTex example', async ({ page }) => {
+  const plugin = await openHost(page, { text: '' });
+
+  await plugin.getByRole('button', { name: 'alphaTex example' }).click();
+
+  await expect(rendering(plugin).first()).toBeVisible();
+  await expect.poll(() => lastSaved(page)).toMatch(/^\\title "Morning on the Stave"\n/);
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  for (const track of ['Melody', 'Rhythm', 'Bass']) {
+    await expect(plugin.getByRole('menuitemcheckbox', { name: `Mute ${track}` })).toBeVisible();
+  }
+});
+
 test('an empty note starts from the alphaTex template', async ({ page }) => {
   const plugin = await openHost(page, { text: '' });
 
-  await plugin.getByRole('button', { name: 'alphaTex' }).click();
+  await plugin.getByRole('button', { name: 'alphaTex', exact: true }).click();
 
   await expect(rendering(plugin).first()).toBeVisible();
   await expect.poll(() => lastSaved(page)).toMatch(/^\\title "Untitled"\n/);
   await expect(plugin.getByRole('combobox', { name: 'Notation' })).toHaveValue('alphatex');
 });
 
-test('renders the example with both tracks and redraws after edits', async ({ page }) => {
+test('renders the example with its three tracks and redraws after edits', async ({ page }) => {
   const plugin = await openHost(page, { text: EXAMPLE });
   await expect(rendering(plugin).first()).toBeVisible();
-  await expect(plugin.locator('.render-target')).toContainText('Morning Riff');
+  await expect(plugin.locator('.render-target')).toContainText('Morning on the Stave');
 
   const edited = await openHost(page, { text: `${HEADER}3.3.4` });
   await expect(rendering(edited).first()).toBeVisible();
@@ -92,9 +105,9 @@ test('exports SVG, MIDI and Guitar Pro files named after the title', async ({ pa
   await expect(rendering(plugin).first()).toBeVisible();
 
   for (const [label, name] of [
-    ['Export SVG image', 'Morning Riff.svg'],
-    ['Export MIDI file', 'Morning Riff.mid'],
-    ['Export Guitar Pro 7', 'Morning Riff.gp'],
+    ['Export SVG image', 'Morning on the Stave.svg'],
+    ['Export MIDI file', 'Morning on the Stave.mid'],
+    ['Export Guitar Pro 7', 'Morning on the Stave.gp'],
   ]) {
     await plugin.getByRole('menuitem', { name: 'File' }).click();
     const download = page.waitForEvent('download');
@@ -104,7 +117,7 @@ test('exports SVG, MIDI and Guitar Pro files named after the title', async ({ pa
     if (name.endsWith('.svg')) {
       const svg = readFileSync(await file.path(), 'utf8');
       expect(svg).toContain('data:font/woff2;base64,');
-      expect(svg).toContain('Morning Riff');
+      expect(svg).toContain('Morning on the Stave');
     }
   }
 });
@@ -159,6 +172,31 @@ for (const opaqueOrigin of [false, true]) {
   });
 }
 
+test('plays with the metronome and a count-in', async ({ page }) => {
+  const plugin = await openHost(page, { text: `${HEADER}0.3.4 2.3 3.3 5.3 | 7.3.2 5.3` });
+  await expect(rendering(plugin).first()).toBeVisible();
+
+  for (const item of ['Metronome', 'Count-in']) {
+    await plugin.getByRole('menuitem', { name: 'Play' }).click();
+    await plugin.getByRole('menuitemcheckbox', { name: item }).click();
+  }
+  await plugin.getByRole('menuitem', { name: 'Play' }).click();
+  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Count-in' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  );
+  await page.keyboard.press('Escape');
+
+  await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+  const cursor = plugin.locator('.at-cursor-beat');
+  const start = await cursor.evaluate((el) => el.style.transform);
+  await expect
+    .poll(() => cursor.evaluate((el) => el.style.transform), { timeout: 15000 })
+    .not.toBe(start);
+  await expect(plugin.getByRole('alert')).toHaveCount(0);
+  await plugin.getByRole('button', { name: 'Stop' }).click();
+});
+
 test('mutes and solos a track from the Play menu', async ({ page }) => {
   const plugin = await openHost(page, { text: EXAMPLE });
   await expect(rendering(plugin).first()).toBeVisible();
@@ -170,7 +208,7 @@ test('mutes and solos a track from the Play menu', async ({ page }) => {
     'aria-checked',
     'true'
   );
-  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Solo Guitar' })).toHaveAttribute(
+  await expect(plugin.getByRole('menuitemcheckbox', { name: 'Solo Melody' })).toHaveAttribute(
     'aria-checked',
     'false'
   );

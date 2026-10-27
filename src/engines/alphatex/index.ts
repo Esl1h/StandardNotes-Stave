@@ -1,4 +1,5 @@
 import { type CheatsheetSection, type Engine, type ToolDef } from '../../core/engine';
+import EXAMPLE from '../../../examples/alphatex.atex?raw';
 import { alphaTexLanguage } from './language';
 import { alphaTexTitle, emitAlphaTex, isAlphaTex } from './syntax';
 
@@ -113,6 +114,11 @@ const CHEATSHEET: CheatsheetSection[] = [
       { syntax: '\\track "Bass"', meaning: 'Starts a track' },
       { syntax: '\\staff {score tabs}', meaning: 'Standard notation, tablature or both' },
       { syntax: '\\tuning (E4 B3 G3 D3 A2 E2)', meaning: 'String tuning, high to low' },
+      {
+        syntax: '\\tuning (G2 D2 A1 E1)',
+        meaning: '4-string bass; (G2 D2 A1 E1 B0) for 5 strings',
+      },
+      { syntax: '\\instrument (electricbassfinger)', meaning: 'Sound for playback' },
     ],
   },
   {
@@ -160,6 +166,7 @@ export const alphaTexEngine: Engine = {
   detect: isAlphaTex,
   title: alphaTexTitle,
   template: () => TEMPLATE,
+  example: () => EXAMPLE,
   emit: emitAlphaTex,
   async mount(el, opts) {
     const { mountAlphaTex } = await import('./renderer');

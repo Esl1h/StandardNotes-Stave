@@ -8,6 +8,13 @@ test('the template is valid ABC that the engine detects', () => {
   expect(abcjs.parseOnly(template)[0].warnings ?? []).toEqual([]);
 });
 
+test('the example is valid ABC that the engine detects', () => {
+  const example = abcEngine.example!();
+  expect(abcEngine.detect(example)).toBe(true);
+  expect(abcEngine.title(example)).toBe('Morning on the Stave');
+  expect(abcjs.parseOnly(example)[0].warnings ?? []).toEqual([]);
+});
+
 test('every tool writes valid ABC after the template', () => {
   for (const tool of abcEngine.tools()) {
     const src = abcEngine.template().replace(/\|\]\n$/, '');

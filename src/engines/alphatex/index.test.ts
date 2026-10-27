@@ -27,6 +27,13 @@ test('the template is valid alphaTex that the engine detects', () => {
   expect(problems(template)).toEqual([]);
 });
 
+test('the example is valid alphaTex that the engine detects', () => {
+  const example = alphaTexEngine.example!();
+  expect(alphaTexEngine.detect(example)).toBe(true);
+  expect(alphaTexEngine.title(example)).toBe('Morning on the Stave');
+  expect(problems(example)).toEqual([]);
+});
+
 test('every tool writes valid alphaTex after the template', () => {
   for (const tool of alphaTexEngine.tools()) {
     const src = alphaTexEngine.template().trimEnd();

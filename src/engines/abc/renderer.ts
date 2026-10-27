@@ -16,9 +16,11 @@ import {
  */
 
 const SOUNDFONT = 'soundfont/FluidR3_GM/';
-// The only instrument shipped; every track plays on it.
-const INSTRUMENT = 'acoustic_grand_piano';
 const HIGHLIGHT = 'stave-highlight';
+// Metronome clicks: abcjs plays them as a drum track, and every track plays
+// on the piano, so these are high piano notes, the first beat higher.
+const CLICK_ACCENT = 96;
+const CLICK = 91;
 const PLAYING = 'stave-playing';
 
 /**
@@ -36,12 +38,60 @@ export function parseWarnings(warnings: string[] | undefined): SourceError[] {
 
 const sourceFile = () => new URL(SOUNDFONT, document.baseURI).href;
 
+// General MIDI program 0, the acoustic grand piano: the only instrument
+// shipped (docs/adr/0014), so every track and the percussion play on it.
+const PIANO = 0;
+
+/**
+ * The tune as abcjs's synth sees it, with every program set to the piano.
+ * The synth picks the samples to load from the sequence setUpAudio builds,
+ * before any callback could change it, so the change goes there.
+ */
+function onPiano(tune: TuneObject): TuneObject {
+  return Object.create(tune, {
+    setUpAudio: {
+      value: (params: Parameters<TuneObject['setUpAudio']>[0]) => {
+        const sequence = tune.setUpAudio(params);
+        for (const track of sequence.tracks) {
+          for (const event of track as Array<{ cmd?: string; instrument?: number }>) {
+            if (event.cmd === 'program' || event.instrument !== undefined) {
+              event.instrument = PIANO;
+            }
+          }
+        }
+        return sequence;
+      },
+    },
+  }) as TuneObject;
+}
+
+/** An abcjs drum pattern with a click on every beat of the meter, the first accented. */
+export function clickPattern(beats: number): string {
+  const count = Math.max(1, Math.round(beats) || 4);
+  const rest = Array.from({ length: count - 1 });
+  return [
+    'd'.repeat(count),
+    [CLICK_ACCENT, ...rest.map(() => CLICK)].join(' '),
+    [110, ...rest.map(() => 70)].join(' '),
+  ].join(' ');
+}
+
 class AbcPlayer implements Player {
   private synth: MidiBuffer | null = null;
   private timing: TimingCallbacks | null = null;
-  private state: PlayerState = { playing: false, speed: 1, loop: false };
+  private state: PlayerState = {
+    playing: false,
+    speed: 1,
+    loop: false,
+    metronome: false,
+    countIn: false,
+  };
   private listeners: Array<(state: PlayerState) => void> = [];
   private paused = false;
+  // The cursor waits out the count-in bar, which abcjs's timing does not know.
+  private introTimer: ReturnType<typeof setTimeout> | undefined;
+  private introEnds = 0;
+  private introLeft = 0;
 
   constructor(
     private tune: () => TuneObject | undefined,
@@ -64,7 +114,8 @@ class AbcPlayer implements Player {
     if (this.paused && this.synth && this.timing) {
       this.paused = false;
       this.synth.resume();
-      this.timing.start();
+      if (this.introLeft > 0) this.startTiming(this.introLeft);
+      else this.timing.start();
       this.emit({ playing: true });
       return;
     }
@@ -77,15 +128,19 @@ class AbcPlayer implements Player {
     this.emit({ playing: true });
     try {
       const loading = await synth.init({
-        visualObj: tune,
+        visualObj: onPiano(tune),
         millisecondsPerMeasure: tune.millisecondsPerMeasure() / this.state.speed,
         options: {
           soundFontUrl: sourceFile(),
           // What abcjs uses for these same samples from its default URL.
           soundFontVolumeMultiplier: 3,
-          drumOff: true,
-          sequenceCallback: (tracks) =>
-            tracks.map((track) => track.map((note) => ({ ...note, instrument: INSTRUMENT }))),
+          drum:
+            this.state.metronome || this.state.countIn
+              ? clickPattern(tune.getMeterFraction().num)
+              : '',
+          drumIntro: this.state.countIn ? 1 : 0,
+          // Off after the intro: a count-in without the metronome.
+          drumOff: !this.state.metronome,
           onEnded: () => this.ended(),
         },
       });
@@ -110,15 +165,31 @@ class AbcPlayer implements Player {
       },
     });
     synth.start();
-    this.timing.start();
+    this.startTiming(this.introLength(tune));
+  }
+
+  private introLength(tune: TuneObject) {
+    return this.state.countIn ? tune.millisecondsPerMeasure() / this.state.speed : 0;
+  }
+
+  private startTiming(delay: number) {
+    clearTimeout(this.introTimer);
+    this.introLeft = 0;
+    if (delay <= 0) {
+      this.timing?.start(0);
+      return;
+    }
+    this.introEnds = performance.now() + delay;
+    this.introTimer = setTimeout(() => this.timing?.start(0), delay);
   }
 
   private ended() {
-    if (this.state.loop && this.synth) {
+    const tune = this.tune();
+    if (this.state.loop && this.synth && tune) {
       this.timing?.stop();
       this.synth.seek(0);
       this.synth.start();
-      this.timing?.start(0);
+      this.startTiming(this.introLength(tune));
       return;
     }
     this.stop();
@@ -128,11 +199,16 @@ class AbcPlayer implements Player {
     if (!this.synth || !this.state.playing) return;
     this.synth.pause();
     this.timing?.pause();
+    clearTimeout(this.introTimer);
+    this.introLeft = Math.max(0, this.introEnds - performance.now());
     this.paused = true;
     this.emit({ playing: false });
   }
 
   stop() {
+    clearTimeout(this.introTimer);
+    this.introEnds = 0;
+    this.introLeft = 0;
     this.synth?.stop();
     this.timing?.stop();
     this.synth = null;
@@ -151,6 +227,22 @@ class AbcPlayer implements Player {
 
   setLoop(loop: boolean) {
     this.emit({ loop });
+  }
+
+  // Both change the audio abcjs prepares, so a running tune starts over.
+  setMetronome(metronome: boolean) {
+    this.restartWith({ metronome });
+  }
+
+  setCountIn(countIn: boolean) {
+    this.restartWith({ countIn });
+  }
+
+  private restartWith(change: Partial<PlayerState>) {
+    const wasPlaying = this.state.playing;
+    this.stop();
+    this.emit(change);
+    if (wasPlaying) void this.play();
   }
 }
 

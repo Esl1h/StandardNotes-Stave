@@ -16,6 +16,7 @@ const { one, two } = vi.hoisted(() => {
     detect: (src: string) => src.startsWith(prefix),
     title: () => undefined,
     template: () => `${prefix} template`,
+    example: () => `${prefix} example`,
     emit: (cmd: { kind: string; dur?: number }, ctx: { from: number; to: number }) => ({
       from: ctx.from,
       to: ctx.to,
@@ -72,6 +73,26 @@ test('offers the engines for an empty note and starts from a template', () => {
 
   expect(onTextChange).toHaveBeenCalledWith('2: template');
   expect(window.localStorage.getItem('standardnotes-stave-default-engine')).toBe('two');
+});
+
+test('an empty note opens an example', () => {
+  const { onTextChange } = setup('');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Two example' }));
+  expect(onTextChange).toHaveBeenCalledWith('2: example');
+  fireEvent.click(screen.getByRole('menuitem', { name: 'File' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Open the One example' }));
+  expect(onTextChange).toHaveBeenLastCalledWith('1: example');
+});
+
+test('a written note does not offer to open an example', () => {
+  setup('1: notes');
+
+  fireEvent.click(screen.getByRole('menuitem', { name: 'File' }));
+  expect(screen.getByRole('menuitem', { name: 'Open the Two example' })).toHaveAttribute(
+    'aria-disabled',
+    'true'
+  );
 });
 
 test('shows the detected engine and mounts its renderer', async () => {
@@ -185,10 +206,12 @@ test('a failed playback says why and shows Play again', async () => {
   expect(screen.getByRole('button', { name: 'Play' })).toBeEnabled();
 });
 
-test('offers the views and track controls of the renderer', async () => {
+test('offers the views, track and click controls of the renderer', async () => {
   const setView = vi.fn();
   const setTrackMute = vi.fn();
   const setTrackSolo = vi.fn();
+  const setMetronome = vi.fn();
+  const setCountIn = vi.fn();
   const player = {
     play: vi.fn(),
     pause: vi.fn(),
@@ -197,11 +220,15 @@ test('offers the views and track controls of the renderer', async () => {
     setLoop: vi.fn(),
     setTrackMute,
     setTrackSolo,
+    setMetronome,
+    setCountIn,
     onStateChange: vi.fn((cb: (state: object) => void) =>
       cb({
         playing: false,
         speed: 1,
         loop: false,
+        metronome: false,
+        countIn: true,
         tracks: [
           { name: 'Guitar', muted: false, solo: false },
           { name: '', muted: true, solo: false },
@@ -241,6 +268,12 @@ test('offers the views and track controls of the renderer', async () => {
   fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
   fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Mute Track 2' }));
   expect(setTrackMute).toHaveBeenCalledWith(1, false);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Metronome' }));
+  expect(setMetronome).toHaveBeenCalledWith(true);
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Play' }));
+  fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Count-in' }));
+  expect(setCountIn).toHaveBeenCalledWith(false);
 });
 
 test('a failed export says why', async () => {

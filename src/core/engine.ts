@@ -86,6 +86,10 @@ export interface PlayerState {
   loop: boolean;
   /** The tracks a player can mute or solo, when it can. */
   tracks?: TrackState[];
+  /** A click on every beat, when the player has one. */
+  metronome?: boolean;
+  /** A bar of clicks before the music, when the player has one. */
+  countIn?: boolean;
 }
 
 export interface Player {
@@ -96,6 +100,8 @@ export interface Player {
   setLoop(loop: boolean): void;
   setTrackMute?(index: number, muted: boolean): void;
   setTrackSolo?(index: number, solo: boolean): void;
+  setMetronome?(on: boolean): void;
+  setCountIn?(on: boolean): void;
   onStateChange(cb: (state: PlayerState) => void): void;
 }
 
@@ -173,6 +179,8 @@ export interface Engine {
   /** The piece's title, for the notes list preview. */
   title(src: string): string | undefined;
   template(): string;
+  /** A finished piece that shows what the notation can do. */
+  example?(): string;
   emit(cmd: Cmd, ctx: CursorCtx): Edit;
   /** Loads the renderer chunk and draws into el. */
   mount(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance>;

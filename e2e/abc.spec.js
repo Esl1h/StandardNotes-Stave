@@ -10,7 +10,7 @@ const lastSaved = async (page) =>
 test('an empty note starts from the ABC template', async ({ page }) => {
   const plugin = await openHost(page, { text: '' });
 
-  await plugin.getByRole('button', { name: 'ABC' }).click();
+  await plugin.getByRole('button', { name: 'ABC', exact: true }).click();
 
   await expect(plugin.locator('.render-target svg')).toBeVisible();
   await expect.poll(() => lastSaved(page)).toMatch(/^X:1\nT:Untitled\n/);
@@ -112,7 +112,10 @@ test('plays with the bundled piano samples and never a CDN', async ({ page }) =>
     if (url.hostname !== 'localhost') remote.push(request.url());
     if (url.pathname.includes('/soundfont/')) samples.push(url.pathname);
   });
-  const plugin = await openHost(page, { text: 'X:1\nL:1/8\nQ:1/4=240\nK:C\nCDEF|]\n' });
+  // A violin is asked for; the build has piano samples only.
+  const plugin = await openHost(page, {
+    text: 'X:1\nL:1/8\nQ:1/4=240\n%%MIDI program 40\nK:C\nCDEF|]\n',
+  });
   await expect(plugin.locator('.render-target svg')).toBeVisible();
 
   await plugin.getByRole('button', { name: 'Play', exact: true }).click();
@@ -158,4 +161,26 @@ test('a phone stacks the panes', async ({ page }) => {
   const rendering = await plugin.locator('.render-pane').boundingBox();
   expect(rendering.y).toBeGreaterThan(source.y);
   await expect(plugin.locator('.render-target svg')).toBeVisible();
+});
+
+test('counts in a bar and clicks the beats on the piano', async ({ page }) => {
+  const samples = [];
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.includes('/soundfont/')) samples.push(path.split('/').pop());
+  });
+  // A bar lasts one second at this tempo.
+  const plugin = await openHost(page, { text: 'X:1\nM:4/4\nL:1/4\nQ:1/4=240\nK:C\nCDEF|GABc|]\n' });
+  await expect(plugin.locator('.render-target svg')).toBeVisible();
+
+  for (const item of ['Metronome', 'Count-in']) {
+    await plugin.getByRole('menuitem', { name: 'Play' }).click();
+    await plugin.getByRole('menuitemcheckbox', { name: item }).click();
+  }
+  await plugin.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect.poll(() => samples).toContain('C7.mp3');
+  const started = Date.now();
+  await expect(plugin.locator('.render-target .stave-playing').first()).toBeVisible();
+  expect(Date.now() - started).toBeGreaterThan(500);
+  await plugin.getByRole('button', { name: 'Stop' }).click();
 });

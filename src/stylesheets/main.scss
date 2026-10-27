@@ -353,6 +353,21 @@ $pane-divider: 1px solid color-mix(in srgb, var(--sn-stylekit-neutral-color) 50%
   }
 }
 
+.start .start-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+
+  button {
+    @extend %ghost-button;
+    border: 1px solid var(--sn-stylekit-border-color);
+    color: var(--sn-stylekit-foreground-color);
+    min-width: 0;
+    padding: 6px 12px;
+  }
+}
+
 .dialog-backdrop {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.35);

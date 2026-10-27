@@ -1,5 +1,5 @@
 import abcjs from 'abcjs';
-import { mountAbc, parseWarnings } from './renderer';
+import { clickPattern, mountAbc, parseWarnings } from './renderer';
 
 const theme = {
   foreground: '#111111',
@@ -91,7 +91,13 @@ describe('the player', () => {
     instance.player!.setLoop(true);
     instance.player!.setSpeed(0.5);
 
-    expect(states.at(-1)).toEqual({ playing: false, speed: 0.5, loop: true });
+    expect(states.at(-1)).toEqual({
+      playing: false,
+      speed: 0.5,
+      loop: true,
+      metronome: false,
+      countIn: false,
+    });
   });
 
   test('says so when the browser cannot play audio', async () => {
@@ -102,6 +108,52 @@ describe('the player', () => {
     await expect(instance.player!.play()).rejects.toThrow('cannot play audio');
     instance.player!.pause();
     instance.player!.stop();
+  });
+
+  test('clicks every beat of the meter, the first accented', () => {
+    expect(clickPattern(4)).toBe('dddd 96 91 91 91 110 70 70 70');
+    expect(clickPattern(3)).toBe('ddd 96 91 91 110 70 70');
+    expect(clickPattern(0)).toBe('dddd 96 91 91 91 110 70 70 70');
+  });
+
+  test('asks abcjs for a metronome and a count-in bar', async () => {
+    const inits: Array<{ options: { drum?: string; drumIntro?: number; drumOff?: boolean } }> = [];
+    vi.spyOn(abcjs.synth, 'supportsAudio').mockReturnValue(true);
+    vi.spyOn(abcjs.synth, 'CreateSynth').mockImplementation(function () {
+      return {
+        init: async (params: (typeof inits)[number]) => {
+          inits.push(params);
+          return { cached: [], loaded: ['C4'], error: [] };
+        },
+        prime: vi.fn(async () => ({ status: 'ok', duration: 1 })),
+        start: vi.fn(),
+        stop: vi.fn(),
+        pause: vi.fn(),
+      } as never;
+    });
+    const instance = await mountAbc(document.createElement('div'), { theme, zoom: 1 });
+    await instance.render('X:1\nM:3/4\nK:C\nCDE|]\n');
+    const states: Array<{ metronome?: boolean; countIn?: boolean }> = [];
+    instance.player!.onStateChange((state) => states.push(state));
+
+    await instance.player!.play();
+    expect(inits.at(-1)!.options).toMatchObject({ drum: '', drumIntro: 0 });
+
+    instance.player!.setCountIn!(true);
+    await instance.player!.play();
+    expect(inits.at(-1)!.options).toMatchObject({
+      drum: clickPattern(3),
+      drumIntro: 1,
+      drumOff: true,
+    });
+
+    instance.player!.setMetronome!(true);
+    await instance.player!.play();
+    expect(inits.at(-1)!.options).toMatchObject({ drumIntro: 1, drumOff: false });
+    expect(states.at(-1)).toMatchObject({ metronome: true, countIn: true });
+    instance.player!.pause();
+    instance.player!.stop();
+    vi.restoreAllMocks();
   });
 
   test('fails and stops when no sample could be loaded', async () => {

@@ -1,4 +1,5 @@
 import { type CheatsheetSection, type Engine, type ToolDef } from '../../core/engine';
+import EXAMPLE from '../../../examples/abc.abc?raw';
 import { abcLanguage } from './language';
 import { abcTitle, emitAbc, isAbc } from './syntax';
 
@@ -207,6 +208,7 @@ export const abcEngine: Engine = {
   detect: isAbc,
   title: abcTitle,
   template: () => TEMPLATE,
+  example: () => EXAMPLE,
   emit: emitAbc,
   async mount(el, opts) {
     const { mountAbc } = await import('./renderer');

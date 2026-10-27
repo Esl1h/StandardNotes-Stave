@@ -41,6 +41,10 @@ const PROFILES: Record<string, alphaTab.StaveProfile> = {
 
 const url = (path: string) => new URL(path, document.baseURI).href;
 
+// alphaTab draws at about twice the size of abcjs; at this scale a staff
+// of either engine looks the same at the same zoom.
+const BASE_SCALE = 0.6;
+
 /**
  * How alphaTab starts its player (docs/adr/0015). Inside the Standard Notes
  * iframe the page has an opaque origin: it may not start a worker from the
@@ -120,7 +124,14 @@ function once<T>(
 }
 
 class AlphaTexPlayer implements Player {
-  private state: PlayerState = { playing: false, speed: 1, loop: false, tracks: [] };
+  private state: PlayerState = {
+    playing: false,
+    speed: 1,
+    loop: false,
+    tracks: [],
+    metronome: false,
+    countIn: false,
+  };
   private listeners: Array<(state: PlayerState) => void> = [];
 
   constructor(private api: alphaTab.AlphaTabApi) {
@@ -174,6 +185,7 @@ class AlphaTexPlayer implements Player {
     }
     api.playbackSpeed = this.state.speed;
     api.isLooping = this.state.loop;
+    this.applyClicks();
     if (!api.play()) {
       this.emit({ playing: false });
       throw new Error('The player is not ready.');
@@ -197,6 +209,23 @@ class AlphaTexPlayer implements Player {
   setLoop(loop: boolean) {
     this.api.isLooping = loop;
     this.emit({ loop });
+  }
+
+  /** alphaTab plays a click and a count-in when their volume is above zero. */
+  private applyClicks() {
+    if (!this.api.player) return;
+    this.api.metronomeVolume = this.state.metronome ? 1 : 0;
+    this.api.countInVolume = this.state.countIn ? 1 : 0;
+  }
+
+  setMetronome(metronome: boolean) {
+    this.emit({ metronome });
+    this.applyClicks();
+  }
+
+  setCountIn(countIn: boolean) {
+    this.emit({ countIn });
+    this.applyClicks();
   }
 
   private setTrack(index: number, change: { muted?: boolean; solo?: boolean }) {
@@ -302,10 +331,18 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       logLevel: alphaTab.LogLevel.None,
     },
     display: {
-      scale: opts.zoom,
+      scale: opts.zoom * BASE_SCALE,
+      // The pane has a padding of its own.
+      padding: [8, 8],
       layoutMode: alphaTab.LayoutMode.Page,
       staveProfile: PROFILES[view],
       resources: resources(theme),
+    },
+    notation: {
+      // The track names and tunings above the first system overlap each
+      // other in alphaTab 1.8.4; each staff already names its track, and the
+      // source states any tuning.
+      elements: new Map([[alphaTab.NotationElement.GuitarTuning, false]]),
     },
     player: {
       playerMode: alphaTab.PlayerMode.Disabled,
@@ -408,7 +445,7 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       if (api.score) void draw();
     },
     setZoom(next) {
-      api.settings.display.scale = next;
+      api.settings.display.scale = next * BASE_SCALE;
       api.updateSettings();
       if (api.score) void draw();
     },

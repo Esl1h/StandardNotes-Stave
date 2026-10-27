@@ -11,9 +11,11 @@ A music notation and tablature editor for [Standard Notes](https://standardnotes
 
 Stave is in early development: ABC and alphaTex work end to end, and more is coming (see [Roadmap](#roadmap)).
 
-![Stave editing an ABC tune, light theme](.github/screenshots/stave-abc-light.png)
+![Stave editing an ABC tune with a melody and a bass line, light theme](.github/screenshots/stave-abc-light.png)
 
-![The same tune in a dark theme](.github/screenshots/stave-abc-dark.png)
+![The same tune in alphaTex, with melody, rhythm guitar and 4-string bass tracks, dark theme](.github/screenshots/stave-alphatex-dark.png)
+
+More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png) and [alphaTex, light theme](.github/screenshots/stave-alphatex-light.png).
 
 ## Features
 
@@ -22,23 +24,25 @@ Stave is in early development: ABC and alphaTex work end to end, and more is com
 - Live rendering with [abcjs](https://www.abcjs.net) as you type, with parser errors underlined in the source at their line and column
 - A toolbar for durations, rests, dots, accidentals, ties, bar lines, repeats, ornaments and chord symbols; it writes ABC at the cursor, in the unit note length of the tune
 - Click a note in the rendering to select it in the source; the note at the cursor is highlighted in the rendering
-- Playback with a cursor that follows the notes, loop and speed from 50% to 150%, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin
+- Playback with a cursor that follows the notes, loop, speed from 50% to 150%, a metronome and a count-in bar, on a piano sampled from the Fluid R3 GM SoundFont that ships with the plugin (every voice plays on it)
 - Transpose the source a semitone at a time (key signature included)
 - Export SVG, PNG and MIDI, or download the `.abc` source
 - Syntax highlighting, completion of header fields, and a cheat sheet in the Help menu
 
 ### alphaTex
 
-- Standard notation and guitar tablature with [alphaTab](https://www.alphatab.net), several tracks with their own tunings, shown as score, tab or both (View menu)
+- Standard notation and tablature with [alphaTab](https://www.alphatab.net), several tracks with their own tunings (guitar, 4 or 5-string bass, any `\tuning`), shown as score, tab or both (View menu)
 - Parser errors underlined in the source at their line and column; the last good rendering stays while you fix them
-- A toolbar for durations, rests, dots, ties, bar lines, repeats, chord symbols and techniques (bend, slide, hammer-on, palm mute, harmonic, vibrato, dead note); sharp and flat move a fret up or down
+- A toolbar for durations, rests, dots, ties, bar lines, repeats, chord symbols and techniques (bend, slide, hammer-on, palm mute, harmonic, vibrato, dead note); sharp and flat move a fret up or down, and notes are placed on the strings of the track's tuning
 - Click a beat in the rendering to select it in the source; the beat at the cursor is marked in the rendering
-- Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, and mute or solo per track (Play menu)
-- Transpose the source a semitone at a time: frets, pitch names, key signature and chord symbols
+- Playback with alphaTab's synthesizer and the Sonivox SoundFont that ships with the plugin, with a cursor, loop, speed, a metronome, a count-in, and mute or solo per track (Play menu)
+- Transpose the source a semitone at a time: frets (moved to another string of the track's tuning when they leave the neck), pitch names, key signature and chord symbols
 - Export SVG (with the music font inside), PNG, MIDI and Guitar Pro 7, or download the `.atex` source
 - Syntax highlighting, completion of metadata tags, and a cheat sheet in the Help menu
 
 ### Editor
+
+- Each notation comes with a short template for a new piece and a full example (File menu, or the buttons of an empty note): the same tune in ABC and in alphaTex, showing what each can do
 
 - Source and rendering side by side, stacked, or one at a time, with the panes in either order
 - A menu bar (File, Edit, View, Play, Help) and a contextual toolbar, both collapsible, with the notation of the note always visible
@@ -104,7 +108,13 @@ An alphaTex note is plain [alphaTex](https://www.alphatab.net/docs/alphatex/intr
 \track "Guitar"
 \staff {score tabs}
 0.6.8 0.6 3.6 0.6 5.6.4 3.6.8 5.6 | (0.6 2.5 2.4).4{ch "E5"} 7.3{b (0 4)}.4 r.2
+\track "Bass"
+\tuning (G2 D2 A1 E1)
+\staff {tabs}
+0.4.4 0.4 3.4 0.4 | 0.4.2 r.2
 ```
+
+A bass track takes its tuning from `\tuning`, high string first: `(G2 D2 A1 E1)` for 4 strings, `(G2 D2 A1 E1 B0)` for 5. `\instrument (electricbassfinger)` picks its sound for playback.
 
 [examples/](examples) has a note for each notation, used by the tests and the screenshots.
 
