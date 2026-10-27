@@ -232,3 +232,17 @@ test('loops the notes of the selection', async ({ page }) => {
   await expect(plugin.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
   await plugin.getByRole('button', { name: 'Stop' }).click();
 });
+
+test('formats the source as one undoable edit', async ({ page }) => {
+  const src = 'X:1\nK:C\n\n\nC  D   E F|]   \n';
+  const plugin = await openHost(page, { text: src });
+  await expect(plugin.locator('.render-target svg')).toBeVisible();
+
+  await plugin.getByRole('menuitem', { name: 'Edit' }).click();
+  await plugin.getByRole('menuitem', { name: 'Format source' }).click();
+  await expect.poll(() => lastSaved(page)).toBe('X:1\nK:C\n\nC D E F|]\n');
+
+  await plugin.locator('.cm-content').click();
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => lastSaved(page)).toBe(src);
+});

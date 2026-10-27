@@ -192,6 +192,8 @@ export interface Engine {
   /** A finished piece that shows what the notation can do. */
   example?(): string;
   emit(cmd: Cmd, ctx: CursorCtx): Edit;
+  /** The source tidied without changing the music. */
+  format?(src: string): string;
   /** Loads the renderer chunk and draws into el. */
   mount(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance>;
   tools(): ToolDef[];

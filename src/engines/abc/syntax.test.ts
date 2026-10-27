@@ -1,11 +1,13 @@
 import abcjs from 'abcjs';
 import fc from 'fast-check';
+import { readFileSync } from 'node:fs';
 import { type Cmd, type Dur, type Edit } from '../../core/engine';
 import {
   abcPitch,
   abcTitle,
   durationText,
   emitAbc,
+  formatAbc,
   isAbc,
   lengthText,
   noteBefore,
@@ -227,6 +229,44 @@ describe('what the toolbar writes is valid ABC', () => {
         expect(tune.warnings ?? []).toEqual([]);
       }),
       { numRuns: 300 }
+    );
+  });
+});
+
+describe('formatting', () => {
+  test('tidies lines and spaces, and keeps fields, comments and quotes', () => {
+    const src =
+      'X:1\r\nT:A  title  \nK:C\n\n\n  C  D\tE   F |  "G  7"G4 % a  comment\nw: lyr-  ics\n\n\n';
+    expect(formatAbc(src)).toBe(
+      'X:1\nT:A  title\nK:C\n\n  C D E F | "G  7"G4 % a  comment\nw: lyr-  ics\n'
+    );
+  });
+
+  /** The music abcjs reads, without the source offsets. */
+  const music = (src: string) =>
+    JSON.stringify(
+      abcjs.parseOnly(src).map((tune) => tune.lines),
+      (key, value: unknown) => (/Char$/.test(key) ? undefined : value)
+    );
+
+  test('keeps the music of the example and is stable', () => {
+    const example = readFileSync('examples/abc.abc', 'utf8');
+    const once = formatAbc(example);
+    expect(music(once)).toBe(music(example));
+    expect(formatAbc(once)).toBe(once);
+  });
+
+  test('keeps the music of any spacing', () => {
+    const token = fc.constantFrom('C', 'D2', 'E/', '|', '"Am"', '(3', 'z', '^F', '[CEG]');
+    const space = fc.constantFrom(' ', '  ', '\t', ' \t ');
+    fc.assert(
+      fc.property(fc.array(fc.tuple(token, space), { maxLength: 20 }), (parts) => {
+        const src = `${HEADER}${parts.map(([t, s]) => t + s).join('')}\n`;
+        const formatted = formatAbc(src);
+        expect(music(formatted)).toBe(music(src));
+        expect(formatAbc(formatted)).toBe(formatted);
+      }),
+      { numRuns: 200 }
     );
   });
 });

@@ -149,6 +149,16 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     [instance, editable]
   );
 
+  const formatSource = () => {
+    const view = viewRef.current;
+    if (!engine?.format || !view || !editable) return;
+    const current = view.state.doc.toString();
+    const next = engine.format(current);
+    if (next !== current) {
+      view.dispatch({ changes: changedRange(current, next), userEvent: 'input.format' });
+    }
+  };
+
   const startWith = (next: Engine, text = next.template()) => {
     setPref('defaultEngine', next.id);
     onTextChange(text);
@@ -306,6 +316,11 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
           shortcut: `${ctrl}Down`,
           disabled: !instance?.transpose || !editable,
           onSelect: () => void transpose(-1),
+        },
+        {
+          label: 'Format source',
+          disabled: !engine?.format || !editable,
+          onSelect: formatSource,
         },
         'separator',
         {

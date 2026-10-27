@@ -1,4 +1,5 @@
 import { type Cmd, type CursorCtx, type Dur, type Edit, type HeaderKey } from '../../core/engine';
+import { mapOutside, singleSpaces, tidyLines } from '../../core/format';
 
 /**
  * ABC 2.1 text for toolbar commands. Pure string work, no abcjs: this
@@ -286,3 +287,18 @@ export const abcTitle = (src: string): string | undefined =>
 
 /** ABC when the first line that is not empty starts with X: (docs/adr/0010). */
 export const isAbc = (src: string): boolean => /^\s*X:/.test(src);
+
+/**
+ * The source tidied: lines and blank lines as tidyLines leaves them, and
+ * single spaces between the notes of music lines. A space ends a beam, and
+ * so do several, so the music stays the same. Fields, comments, quoted
+ * chords and annotations stay as written.
+ */
+export function formatAbc(src: string): string {
+  return tidyLines(src)
+    .split('\n')
+    .map((line) =>
+      /^\s*(?:[A-Za-z+]:|%)/.test(line) ? line : mapOutside(line, /"[^"]*"?|%.*$/, singleSpaces)
+    )
+    .join('\n');
+}

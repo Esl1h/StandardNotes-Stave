@@ -1,4 +1,5 @@
 import { type Cmd, type CursorCtx, type Edit, type HeaderKey } from '../../core/engine';
+import { mapOutside, singleSpaces, tidyLines } from '../../core/format';
 
 /**
  * alphaTex text for toolbar commands. Pure string work, no alphaTab: this
@@ -469,4 +470,22 @@ export function transposeAlphaTex(src: string, semitones: number): string {
       return whole;
     }
   );
+}
+
+// Strings and comments, which formatting leaves as written.
+const KEPT = /"(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?|\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/;
+
+/**
+ * The source tidied: lines and blank lines as tidyLines leaves them, single
+ * spaces between tokens and a space on each side of a bar line. alphaTex
+ * reads any whitespace alike, so the music stays the same.
+ */
+export function formatAlphaTex(src: string): string {
+  const spaced = mapOutside(tidyLines(src), KEPT, (gap, before) =>
+    singleSpaces(
+      gap.replace(/([^\s|])[ \t]*\|/g, '$1 |').replace(/\|[ \t]*([^\s|])/g, '| $1'),
+      before
+    )
+  );
+  return tidyLines(spaced);
 }
