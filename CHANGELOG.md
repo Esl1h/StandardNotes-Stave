@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-10-27
+
+### Added
+
+- **alphatex:** Write alphaTex for the toolbar
+- **alphatex:** Highlight alphaTex and its tags
+- Let engines offer views and track controls
+- Show why an export failed
+- **alphatex:** Render, play and export alphaTex
+
+### Documentation
+
+- Document the alphaTex engine
+
 ## [0.1.1] - 2026-10-26
 
 ### Fixed
