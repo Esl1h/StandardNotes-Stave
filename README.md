@@ -1,5 +1,7 @@
 # StandardNotes Stave
 
+![StandardNotes Stave: music notation and tablature](assets/head.png)
+
 [![CI](https://github.com/Esl1h/StandardNotes-Stave/actions/workflows/ci.yml/badge.svg)](https://github.com/Esl1h/StandardNotes-Stave/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Esl1h/StandardNotes-Stave/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/Esl1h/StandardNotes-Stave/actions/workflows/github-code-scanning/codeql)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Esl1h/StandardNotes-Stave/badges/coverage.json)](https://github.com/Esl1h/StandardNotes-Stave/actions/workflows/coverage.yml)
@@ -7,6 +9,8 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15997/badge)](https://www.bestpractices.dev/projects/15997)
 [![Release](https://img.shields.io/github/v/release/Esl1h/StandardNotes-Stave)](https://github.com/Esl1h/StandardNotes-Stave/releases/latest)
 [![License](https://img.shields.io/github/license/Esl1h/StandardNotes-Stave)](LICENSE)
+
+<img src="assets/logo.png" alt="StandardNotes Stave logo" width="200" align="right">
 
 A music notation and tablature editor for [Standard Notes](https://standardnotes.com), a free, open-source, end-to-end encrypted notes app. You write music as text (ABC, alphaTex, ChordPro) and Stave draws it next to the source, plays it and exports it. The note keeps only the text, so it stays readable and useful without the plugin.
 
