@@ -88,6 +88,84 @@ test('reports the source range of a clicked note and highlights from the source'
   expect(el.querySelectorAll('.stave-highlight')).toHaveLength(0);
 });
 
+describe('a file with several tunes', () => {
+  const src = 'X:1\nT:One\nK:C\nCDEF|]\n\nX:2\nT:Two\nK:G\nGABc|]\n';
+  const at = src.indexOf('GABc');
+  const bytesOf = async (blob: Blob) => Array.from(new Uint8Array(await blob.arrayBuffer()));
+  const midiOf = (startingTune: number) =>
+    Array.from(
+      abcjs.synth.getMidiFile(src, {
+        midiOutputType: 'binary',
+        startingTune,
+      } as never) as unknown as number[][]
+    )[0] as unknown as number[];
+
+  test('draws and exports the MIDI of the tune under the cursor, the first without one', async () => {
+    const el = document.createElement('div');
+    const instance = await mountAbc(el, { theme, zoom: 1 });
+    await instance.render(src);
+    expect(el.textContent).toContain('One');
+    expect(await bytesOf(await instance.export!('midi'))).toEqual(Array.from(midiOf(0)));
+
+    instance.highlight!([at, at]);
+    expect(el.textContent).toContain('Two');
+    expect(el.textContent).not.toContain('One');
+    expect(await bytesOf(await instance.export!('midi'))).toEqual(Array.from(midiOf(1)));
+    expect((await (await instance.export!('svg')).text()).includes('Two')).toBe(true);
+
+    // A cursor in the header of the first tune brings it back.
+    instance.highlight!([0, 0]);
+    expect(el.textContent).toContain('One');
+  });
+
+  test('keeps the tune under the cursor when the source is edited', async () => {
+    const el = document.createElement('div');
+    const instance = await mountAbc(el, { theme, zoom: 1 });
+    await instance.render(src);
+    instance.highlight!([at, at]);
+    await instance.render(src.replace('GABc', 'GABd'));
+    expect(el.textContent).toContain('Two');
+  });
+
+  test('plays the tune under the cursor', async () => {
+    const played: Array<{ metaText: { title: string } }> = [];
+    vi.spyOn(abcjs.synth, 'supportsAudio').mockReturnValue(true);
+    vi.spyOn(abcjs.synth, 'CreateSynth').mockImplementation(function () {
+      return {
+        init: async (params: { visualObj: (typeof played)[number] }) => {
+          played.push(params.visualObj);
+          return { cached: [], loaded: ['C4'], error: [] };
+        },
+        prime: vi.fn(async () => ({ status: 'ok', duration: 1 })),
+        start: vi.fn(),
+        stop: vi.fn(),
+        pause: vi.fn(),
+      } as never;
+    });
+    const instance = await mountAbc(document.createElement('div'), { theme, zoom: 1 });
+    await instance.render(src);
+    instance.highlight!([at, at]);
+    await instance.player!.play();
+    instance.player!.stop();
+
+    expect(played.map((tune) => tune.metaText.title)).toEqual(['Two']);
+    vi.restoreAllMocks();
+  });
+});
+
+test('stops the player before a theme or zoom redraw', async () => {
+  const instance = await mountAbc(document.createElement('div'), { theme, zoom: 1 });
+  await instance.render('X:1\nK:C\nC|]\n');
+  const stop = vi.spyOn(instance.player as unknown as { stop(): void }, 'stop');
+
+  instance.setTheme({ ...theme, foreground: '#abcdef' });
+  expect(stop).toHaveBeenCalledTimes(1);
+  instance.setZoom!(1.5);
+  expect(stop).toHaveBeenCalledTimes(2);
+  instance.setLayout!('horizontal');
+  expect(stop).toHaveBeenCalledTimes(3);
+});
+
 describe('the player', () => {
   test('reports its state and keeps speed and loop', async () => {
     const instance = await mountAbc(document.createElement('div'), { theme, zoom: 1 });

@@ -14,6 +14,7 @@ import {
   type SourceError,
   type ThemeColors,
 } from '../../core/engine';
+import { svgToPng } from '../../core/download';
 
 /**
  * The ABC renderer and player, loaded on demand (docs/adr/0009). abcjs
@@ -326,14 +327,18 @@ class AbcPlayer implements Player {
   }
 }
 
-/** The SVG of every tune, stacked, in black on white for other programs. */
-function exportSvg(src: string): string {
+/** The SVG of one tune of the file, in black on white for other programs. */
+function exportSvg(src: string, startingTune: number): string {
   const holder = document.createElement('div');
   holder.style.position = 'absolute';
   holder.style.left = '-10000px';
   document.body.appendChild(holder);
   try {
-    abcjs.renderAbc(holder, src, { foregroundColor: '#000000', add_classes: false });
+    abcjs.renderAbc(holder, src, {
+      foregroundColor: '#000000',
+      add_classes: false,
+      startingTune,
+    });
     const svgs = Array.from(holder.querySelectorAll('svg'));
     let y = 0;
     let width = 0;
@@ -357,26 +362,13 @@ function exportSvg(src: string): string {
   }
 }
 
-async function svgToPng(svg: string): Promise<Blob> {
-  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    // Twice the size, for a sharp print.
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width * 2;
-    canvas.height = image.height * 2;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('No canvas available.');
-    context.scale(2, 2);
-    context.drawImage(image, 0, 0);
-    return await new Promise((resolve, reject) =>
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG export failed.'))))
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+/**
+ * Which tune of a file a source offset is in: abcjs draws and plays one
+ * tune at a time, and an offset before the first X: belongs to the first.
+ */
+export function tuneAt(src: string, offset: number): number {
+  const starts = Array.from(src.matchAll(/^X:/gm), (match) => match.index);
+  return Math.max(0, starts.filter((start) => start <= offset).length - 1);
 }
 
 export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<EngineInstance> {
@@ -384,6 +376,9 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
   let zoom = opts.zoom;
   let layout: Layout = opts.layout ?? 'page';
   let src = '';
+  // The tune of the file that is drawn and played: the one under the cursor.
+  let tuneIndex = 0;
+  let cursor = 0;
   let tunes: TuneObject[] = [];
   let onClick: ((range: [number, number]) => void) | undefined;
   let highlighted: Element[] = [];
@@ -410,6 +405,7 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     el.classList.toggle('layout-horizontal', layout === 'horizontal');
     tunes = abcjs.renderAbc(el, src, {
       add_classes: true,
+      startingTune: tuneIndex,
       scale: zoom,
       ...(layout === 'horizontal' ? horizontal(src) : { responsive: 'resize' }),
       foregroundColor: theme.foreground,
@@ -428,6 +424,13 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     return tunes.flatMap((tune) => parseWarnings(tune.warnings));
   };
 
+  // A redraw replaces the notes the player's cursor points at.
+  const redraw = () => {
+    if (!src) return;
+    player.stop();
+    draw();
+  };
+
   return {
     async render(next) {
       if (next !== src) {
@@ -436,12 +439,22 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
         player.setRange(null);
       }
       src = next;
+      tuneIndex = tuneAt(src, cursor);
       return { errors: draw() };
     },
     onSourceClick(cb) {
       onClick = cb;
     },
     highlight([from]) {
+      cursor = from;
+      const index = tuneAt(src, from);
+      if (index !== tuneIndex && src) {
+        // The cursor moved into another tune: show and play that one.
+        player.stop();
+        player.setRange(null);
+        tuneIndex = index;
+        draw();
+      }
       unmark(highlighted, HIGHLIGHT);
       const element = tunes
         .map((tune) => tune.getElementFromChar(from))
@@ -453,12 +466,14 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     exportFormats: ['svg', 'png', 'midi'],
     async export(fmt: ExportFormat) {
       if (fmt === 'midi') {
-        const files = abcjs.synth.getMidiFile(src, { midiOutputType: 'binary' }) as unknown as
-          Uint8Array[] | Uint8Array;
+        const files = abcjs.synth.getMidiFile(src, {
+          midiOutputType: 'binary',
+          startingTune: tuneIndex,
+        } as never) as unknown as Uint8Array[] | Uint8Array;
         const first = Array.isArray(files) ? files[0] : files;
         return new Blob([first as BlobPart], { type: 'audio/midi' });
       }
-      const svg = exportSvg(src);
+      const svg = exportSvg(src, tuneIndex);
       if (fmt === 'png') return svgToPng(svg);
       return new Blob([svg], { type: 'image/svg+xml' });
     },
@@ -467,16 +482,16 @@ export async function mountAbc(el: HTMLElement, opts: RenderOpts): Promise<Engin
     },
     setTheme(next) {
       theme = next;
-      if (src) draw();
+      redraw();
     },
     setZoom(next) {
       zoom = next;
-      if (src) draw();
+      redraw();
     },
     setLayout(next) {
       if (next === layout) return;
       layout = next;
-      if (src) draw();
+      redraw();
     },
     destroy() {
       player.stop();
