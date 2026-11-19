@@ -96,6 +96,11 @@ export default class ComponentRelay {
 
   private registerMessageHandler() {
     this.messageHandler = (event: MessageEvent) => {
+      // Local patch (see README.md): of the windows, only the host (our parent) may register or
+      // drive the relay. A null source is kept: the native mobile app dispatches its messages
+      // from the WebView itself, and no other window can send one.
+      if (event.source && event.source !== this.contentWindow.parent) return
+
       Logger.info('Components API Message received:', event.data)
 
       /**
