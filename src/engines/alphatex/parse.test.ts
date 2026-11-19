@@ -23,9 +23,9 @@ test('reports errors with a range, even where alphaTab points at a place', () =>
   const { score, errors } = parse(src, new alphaTab.Settings());
 
   expect(score).toBeUndefined();
-  expect(errors).toEqual([
-    expect.objectContaining({ line: 4, from: src.indexOf('.9'), to: src.indexOf('.9') + 1 }),
-  ]);
+  // alphaTab points at the offending digit, not at the dot before it.
+  const at = src.lastIndexOf('9');
+  expect(errors).toEqual([expect.objectContaining({ line: 4, from: at, to: at + 1 })]);
 });
 
 test('reports hints as nothing and a source it cannot read as an error', () => {
