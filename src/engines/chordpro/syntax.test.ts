@@ -114,6 +114,21 @@ describe('detection and title', () => {
   });
 });
 
+describe('CRLF sources', () => {
+  test('parse like LF, with offsets into the original text', () => {
+    const src = '{title: A}\r\n[G]sun\r\n[C]up [D';
+    const song = parseChordPro(src);
+    const lyrics = song.items.filter((item) => item.kind === 'lyrics');
+    expect(lyrics.map((item) => item.segments.map((s) => s.text))).toEqual([['sun'], ['up [D']]);
+    expect(song.meta.title).toBe('A');
+    const second = lyrics[1]!;
+    expect(src.slice(second.from, second.to)).toBe('[C]up [D');
+    expect(song.errors).toHaveLength(1);
+    const unclosed = song.errors[0]?.from ?? -1;
+    expect(src.slice(unclosed, unclosed + 2)).toBe('[D');
+  });
+});
+
 describe('transposition', () => {
   test('moves roots and basses, sharps up and flats down', () => {
     expect(transposeChord('G', 2)).toBe('A');
@@ -128,6 +143,32 @@ describe('transposition', () => {
     expect(transposeChordPro(src, 2)).toBe(
       '{title: In G}\n{key: A}\n# [G] stays\n[A]Sun [E/G#]up\n{c: [G] stays}'
     );
+  });
+
+  test('spells by the chord own accidental, or the key when there is one', () => {
+    expect(transposeChord('Ab', 2)).toBe('Bb');
+    expect(transposeChord('Eb/Bb', 5)).toBe('Ab/Eb');
+    expect(transposeChord('F#m', 2)).toBe('G#m');
+    expect(transposeChord('G', 1)).toBe('G#');
+    expect(transposeChordPro('{key: Ab}\n[Ab]a [G]b [Db]c', 2)).toBe('{key: Bb}\n[Bb]a [A]b [Eb]c');
+    expect(transposeChordPro('{key: C}\n[C]a [G]b', 1)).toBe('{key: C#}\n[C#]a [G#]b');
+  });
+
+  test('leaves tab and grid sections as written', () => {
+    const src = [
+      '{start_of_tab}',
+      'e|--3--[x]--|',
+      '{end_of_tab}',
+      '{start_of_grid}',
+      '| [Am] . . . |',
+      '{end_of_grid}',
+      '[Am]la',
+    ].join('\n');
+    expect(transposeChordPro(src, 2)).toBe(src.replace('[Am]la', '[Bm]la'));
+  });
+
+  test('keeps CRLF line endings when transposing', () => {
+    expect(transposeChordPro('{key: G}\r\n[G]la\r\n', 2)).toBe('{key: A}\r\n[A]la\r\n');
   });
 
   test('a round trip gives the same pitches', () => {
