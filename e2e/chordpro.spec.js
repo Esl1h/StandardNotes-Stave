@@ -45,7 +45,7 @@ test('clicking a chord selects its source, and transposition moves the chords', 
     .toBe('D/F#');
 
   await plugin.getByRole('button', { name: 'Transpose up' }).click();
-  await expect.poll(() => lastSaved(page)).toBe('{key: G#}\nThe [G#]sun [D#/G]up\n');
+  await expect.poll(() => lastSaved(page)).toBe('{key: Ab}\nThe [Ab]sun [Eb/G]up\n');
 });
 
 test('exports SVG named after the title', async ({ page }) => {
