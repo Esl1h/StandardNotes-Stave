@@ -290,6 +290,26 @@ test('lays out one system across, and pages again', async () => {
   expect(el.classList.contains('layout-horizontal')).toBe(false);
 });
 
+test('counts the bars of a source once across redraws', async () => {
+  const parse = vi.spyOn(abcjs, 'parseOnly');
+  const el = document.createElement('div');
+  const instance = await mountAbc(el, { theme, zoom: 1, layout: 'horizontal' });
+  const src = 'X:1\nL:1/4\nK:C\nCDEF|]\n\nX:2\nL:1/4\nK:C\nGABc|]\n';
+  await instance.render(src);
+  const first = el.innerHTML;
+  parse.mockClear();
+
+  // Theme, zoom and a cursor move to another tune all redraw the same text.
+  instance.setTheme({ ...theme });
+  instance.setZoom!(1);
+  instance.highlight!([src.indexOf('X:2'), src.indexOf('X:2')]);
+  instance.highlight!([0, 0]);
+
+  expect(parse).not.toHaveBeenCalled();
+  expect(el.innerHTML).toBe(first);
+  parse.mockRestore();
+});
+
 test('times the notes written in a source range', () => {
   const el = document.createElement('div');
   // A quarter note lasts 500 ms at this tempo.

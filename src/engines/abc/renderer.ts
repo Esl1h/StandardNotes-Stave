@@ -42,17 +42,25 @@ const barsIn = (tune: TuneObject) =>
     )
   );
 
+type HorizontalOptions = { lineBreaks: number[]; staffwidth: number };
+let lastLayout: { src: string; options: HorizontalOptions } | undefined;
+
 /**
  * abcjs options for one long system. lineBreaks lists, for each section of
  * a tune (music between text lines), the bars to end a line on; none, and
  * the section is one line. A section needs a line of source at least.
  * abcjs fits the line in staffwidth, so it grows with the bars.
  */
-function horizontal(src: string) {
+function horizontal(src: string): HorizontalOptions {
+  // Theme, zoom and tune changes redraw the same text: the options depend on
+  // the source alone, so the full parse is kept for the last one.
+  if (lastLayout?.src === src) return lastLayout.options;
   // Typed as number[] in abcjs 6, read as one list per section.
   const lineBreaks = src.split('\n').map(() => []) as unknown as number[];
   const bars = Math.max(1, ...abcjs.parseOnly(src, { lineBreaks }).map(barsIn));
-  return { lineBreaks, staffwidth: bars * BAR_WIDTH };
+  const options = { lineBreaks, staffwidth: bars * BAR_WIDTH };
+  lastLayout = { src, options };
+  return options;
 }
 
 /**
