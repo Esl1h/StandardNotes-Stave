@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-19
+
+### Added
+
+- **abc:** Play the tune under the cursor
+
+### Fixed
+
+- **relay:** Ignore messages from other windows
+- **chordpro:** Keep tabs and CRLF when transposing
+- **png:** Scale an export to fit the canvas
+- **alphatex:** Resolve every pending render
+- **workspace:** Save the last dragged split
+
+### Documentation
+
+- Add logo and header assets to README
+
 ## [1.2.0] - 2026-10-27
 
 ### Added
