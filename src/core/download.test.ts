@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { downloadFile, fileNameFor } from './download';
+import { downloadFile, fileNameFor, pngScale, svgToPng } from './download';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -39,4 +39,47 @@ test('never yields a path or a reserved character', () => {
       expect(name.endsWith('.abc')).toBe(true);
     })
   );
+});
+
+describe('pngScale', () => {
+  test('doubles a normal score for a sharp print', () => {
+    expect(pngScale(800, 1000)).toBe(2);
+  });
+
+  test('keeps a tall score inside the canvas side limit', () => {
+    const scale = pngScale(800, 20000);
+    expect(scale).toBeLessThan(1);
+    expect(20000 * scale).toBeLessThanOrEqual(16384);
+  });
+
+  test('keeps a wide and tall score inside the area limit', () => {
+    const scale = pngScale(15000, 15000);
+    expect(15000 * scale * 15000 * scale).toBeLessThanOrEqual(100_000_000);
+  });
+});
+
+test('svgToPng sizes the canvas by the capped scale', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:svg');
+  URL.revokeObjectURL = vi.fn();
+  vi.stubGlobal(
+    'Image',
+    class {
+      width = 800;
+      height = 20000;
+      set src(_: string) {}
+      decode = async () => {};
+    }
+  );
+  const canvas = document.createElement('canvas');
+  const context = { scale: vi.fn(), drawImage: vi.fn() };
+  vi.spyOn(canvas, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+  vi.spyOn(canvas, 'toBlob').mockImplementation((done) => done(new Blob(['png'])));
+  vi.spyOn(document, 'createElement').mockReturnValue(canvas);
+
+  await svgToPng('<svg/>');
+
+  expect(canvas.height).toBeLessThanOrEqual(16384);
+  expect(canvas.height).toBeGreaterThan(0);
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:svg');
+  vi.unstubAllGlobals();
 });

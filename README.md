@@ -169,7 +169,7 @@ The editor waits for Standard Notes to send the note, so it needs a host: the St
 1. Run `npm run build` to build the app, then:
 
 ```
-npm run server-cors
+npm run server
 ```
 
 2. In Standard Notes, follow the Installation steps above but paste:

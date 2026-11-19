@@ -162,10 +162,11 @@ export function parseChordPro(src: string): Song {
     errors.push({ message, ...position(src, offset), from: offset, to: to ?? offset + 1 });
   const open: Array<{ section: SectionKind; from: number; to: number }> = [];
   let offset = 0;
-  for (const line of src.split('\n')) {
+  for (const line of src.split(/\r?\n/)) {
     const from = offset;
     const to = from + line.length;
-    offset = to + 1;
+    // A CRLF ending is two characters wide; offsets point into the original text.
+    offset = to + (src[to] === '\r' ? 2 : 1);
     const raw = open.length > 0 && ['tab', 'grid'].includes(open[open.length - 1].section);
     const directive = DIRECTIVE.exec(line);
     if (directive) {
@@ -234,36 +235,61 @@ const SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 const STEP: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
-/** A note name moved by semitones; sharps going up, flats going down. */
-function shiftNote(note: string, semitones: number): string {
+/** Whether a chord name is spelled with flats: its own accidental, else the direction of the move. */
+const spellsFlats = (root: string, semitones: number): boolean =>
+  root[1] === 'b' ? true : root[1] === '#' ? false : semitones < 0;
+
+/** A note name moved by semitones, in flats or sharps. */
+function shiftNote(note: string, semitones: number, flats: boolean): string {
   const value = STEP[note[0].toUpperCase()] + (note[1] === '#' ? 1 : note[1] === 'b' ? -1 : 0);
-  return (semitones >= 0 ? SHARPS : FLATS)[(((value + semitones) % 12) + 12) % 12];
+  return (flats ? FLATS : SHARPS)[(((value + semitones) % 12) + 12) % 12];
 }
 
-/** A chord name moved by semitones: its root and any bass after a slash. */
-export function transposeChord(chord: string, semitones: number): string {
+/** The keys that are written with flats: F major and the flat roots, and their minors. */
+const FLAT_KEYS = /^(?:[A-G]b|F(?!#)|(?:[DGCF])(?!#)m(?!aj))/;
+
+/**
+ * A chord name moved by semitones: its root and any bass after a slash.
+ * Spelled in flats when `flats` says so, else by the root's own accidental
+ * (Ab up two is Bb), else flats going down and sharps going up.
+ */
+export function transposeChord(chord: string, semitones: number, flats?: boolean): string {
   return chord.replace(
     /^([A-G](?:#|b)?)(.*?)(?:\/([A-G](?:#|b)?))?$/,
-    (_, root: string, rest: string, bass?: string) =>
-      `${shiftNote(root, semitones)}${rest}${bass ? `/${shiftNote(bass, semitones)}` : ''}`
+    (_, root: string, rest: string, bass?: string) => {
+      const useFlats = flats ?? spellsFlats(root, semitones);
+      return `${shiftNote(root, semitones, useFlats)}${rest}${bass ? `/${shiftNote(bass, semitones, useFlats)}` : ''}`;
+    }
   );
 }
 
 /** The source with every chord and the key moved by semitones; the rest as written. */
 export function transposeChordPro(src: string, semitones: number): string {
   if (semitones === 0) return src;
+  // A tab or grid is not chords in brackets: the parser already marks those lines raw.
+  const raw = new Set(
+    parseChordPro(src).items.flatMap((item) => (item.kind === 'raw' ? [item.from] : []))
+  );
+  // The spelling follows the key the song ends up in, when it names one.
+  const key = /^\s*\{\s*key\s*[:\s]\s*([^}\s]*)/im.exec(src)?.[1];
+  const flats = key ? FLAT_KEYS.test(transposeChord(key, semitones)) : undefined;
+  let offset = 0;
+  // Splitting with a capture keeps each line ending as it was.
   return src
-    .split('\n')
-    .map((line) => {
-      const key = /^(\s*\{\s*key\s*[:\s]\s*)([^}]*?)(\s*\}\s*)$/i.exec(line);
-      if (key) return key[1] + transposeChord(key[2], semitones) + key[3];
+    .split(/(\r?\n)/)
+    .map((line, i) => {
+      const from = offset;
+      offset += line.length;
+      if (i % 2 === 1 || raw.has(from)) return line;
+      const keyLine = /^(\s*\{\s*key\s*[:\s]\s*)([^}]*?)(\s*\}\s*)$/i.exec(line);
+      if (keyLine) return keyLine[1] + transposeChord(keyLine[2], semitones) + keyLine[3];
       if (DIRECTIVE.test(line) || /^\s*#/.test(line)) return line;
       return line.replace(
         /\[([^\]]*)\]/g,
-        (_, chord: string) => `[${transposeChord(chord, semitones)}]`
+        (_, chord: string) => `[${transposeChord(chord, semitones, flats)}]`
       );
     })
-    .join('\n');
+    .join('');
 }
 
 /** The source tidied as every notation is: lines and blank lines only. */

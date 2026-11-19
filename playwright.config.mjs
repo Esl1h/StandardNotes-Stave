@@ -8,7 +8,7 @@ export default defineConfig({
   // Builds once and serves like the Standard Notes dev install does;
   // reuse an already running preview server when possible.
   webServer: {
-    command: 'npm run build && npm run server-cors',
+    command: 'npm run build && npm run server',
     url: 'http://localhost:3000/index.html',
     reuseExistingServer: true,
     timeout: 120000,

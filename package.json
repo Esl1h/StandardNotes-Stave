@@ -32,7 +32,6 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "server": "vite preview --port 3000",
-    "server-cors": "vite preview --port 3000",
     "pretty": "prettier --write 'src/**/*.{html,css,scss,js,jsx,ts,tsx,json}' README.md",
     "format:check": "prettier --check 'src/**/*.{html,css,scss,js,jsx,ts,tsx,json}' README.md",
     "typecheck": "tsc --noEmit",
@@ -59,7 +58,6 @@
     "lucide-react": "^1.61.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "sass": "^1.105.1",
     "uuid": "^14.0.3"
   },
   "devDependencies": {
@@ -81,6 +79,7 @@
     "git-cliff": "^2.14.2",
     "jsdom": "^30.1.1",
     "prettier": "^3.9.10",
+    "sass": "^1.105.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^8.3.5",

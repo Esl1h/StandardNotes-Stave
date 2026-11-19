@@ -9,7 +9,9 @@ import {
   type ThemeColors,
   type ViewDef,
 } from '../../core/engine';
+import { svgToPng } from '../../core/download';
 import { parse, type Parsed } from './parse';
+import { renderWaiter } from './renderWaiter';
 import { transposeAlphaTex } from './syntax';
 import threadUrl from './player-thread?worker&url';
 
@@ -73,7 +75,11 @@ alphaTab.Environment.initializeMain(
   () => {
     if (!workerSource) throw new Error('The player worker is not loaded.');
     const blob = new Blob([workerSource], { type: 'text/javascript' });
-    return new Worker(URL.createObjectURL(blob));
+    const blobUrl = URL.createObjectURL(blob);
+    const worker = new Worker(blobUrl);
+    // The worker has its code once constructed; the URL would only leak.
+    URL.revokeObjectURL(blobUrl);
+    return worker;
   },
   (context) => context.audioWorklet.addModule(url(threadUrl))
 );
@@ -330,28 +336,6 @@ async function exportSvg(surface: HTMLElement): Promise<string> {
   ].join('\n');
 }
 
-async function svgToPng(svg: string): Promise<Blob> {
-  const source = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-  try {
-    const image = new Image();
-    image.src = source;
-    await image.decode();
-    // Twice the size, for a sharp print.
-    const canvas = document.createElement('canvas');
-    canvas.width = image.width * 2;
-    canvas.height = image.height * 2;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('No canvas available.');
-    context.scale(2, 2);
-    context.drawImage(image, 0, 0);
-    return await new Promise((resolve, reject) =>
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG export failed.'))))
-    );
-  } finally {
-    URL.revokeObjectURL(source);
-  }
-}
-
 function exportMidi(score: alphaTab.model.Score, settings: alphaTab.Settings): Blob {
   const midi = new alphaTab.midi.MidiFile();
   // Standard MIDI files: per-note bends (MIDI 2.0) become channel bends.
@@ -399,13 +383,8 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
   });
   const player = new AlphaTexPlayer(api, () => parsed.ranges);
 
-  let rendered: (() => void) | undefined;
-  api.postRenderFinished.on(() => rendered?.());
-  const draw = () =>
-    new Promise<void>((resolve) => {
-      rendered = resolve;
-      api.render();
-    });
+  const whenRendered = renderWaiter(api.postRenderFinished);
+  const draw = () => whenRendered(() => api.render());
 
   // On release, as a click: the press itself would take the focus back from
   // the source after onClick gives it to it.
@@ -423,13 +402,12 @@ export async function mountAlphaTex(el: HTMLElement, opts: RenderOpts): Promise<
       parsed = parse(src, api.settings);
       if (parsed.score) {
         player.stop();
-        await new Promise<void>((resolve) => {
-          rendered = resolve;
+        await whenRendered(() =>
           api.renderScore(
             parsed.score as alphaTab.model.Score,
             parsed.score?.tracks.map((track) => track.index)
-          );
-        });
+          )
+        );
         player.setScore(parsed.score);
       }
       return { errors: parsed.errors };

@@ -6,3 +6,4 @@ Changes from upstream:
 
 - `snjs-types.ts` is added, and the imports from `@standardnotes/snjs` point to it: the relay imports snjs for type names only
 - `Types/MessagePayload.ts` imports `ComponentAction` from `./ComponentAction` instead of snjs
+- `ComponentRelay.ts` ignores messages whose `event.source` is a window other than `contentWindow.parent` (first line of the message handler), so another window cannot register as the host; a null source stays allowed for the native mobile app. Keep this line when refreshing the vendored copy
