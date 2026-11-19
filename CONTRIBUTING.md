@@ -2,18 +2,21 @@
 
 Thanks for helping out. This is a small, focused editor: a music notation and tablature editor for Standard Notes that keeps the note as plain notation text (ABC, alphaTex) and draws and plays it alongside.
 
-By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md). How the project is run is in [GOVERNANCE.md](GOVERNANCE.md), and how the code is organized in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Development setup
 
 ```
 git clone https://github.com/Esl1h/StandardNotes-Stave.git
 cd StandardNotes-Stave
-npm install
+npm ci
+npm test
+npx playwright install chromium   # once, for the e2e suite
+npm run e2e
 npm start
 ```
 
-`npm start` runs the dev server at `http://localhost:3004`.
+`npm ci` installs everything from `package-lock.json`, tools and test environment included (Node as in `.nvmrc`). `npm start` runs the dev server at `http://localhost:3004`.
 
 To test inside your Standard Notes app:
 
@@ -34,11 +37,22 @@ Then install `http://localhost:3000/ext.dev.json` via Preferences > Plugins
 5. `npm run build`
 6. `npm run e2e` (run `npx playwright install chromium` once first)
 
-All six must pass. CI runs the same steps.
+All six must pass. CI runs the same steps on every pull request and every push to `main` (`.github/workflows/ci.yml`), on Node 22 and 24, and also builds the plugin with Yarn 3 from a clean copy, as the community plugins repository would (the `community build` job, `scripts/community-build.sh`). The run page reports which steps passed or failed, and uploads the Playwright results when the e2e job fails. A pull request is merged only when CI is green.
+
+## Coding standards
+
+- TypeScript in `strict` mode (`tsconfig.json`); `npm run typecheck` must pass.
+- ESLint with the configuration in `eslint.config.mjs` (ESLint recommended, typescript-eslint recommended and the React hooks rules); `npm run lint` must pass. Where a rule has to be switched off, do it on that line, with the reason.
+- Prettier with `.prettierrc` (single quotes, 100 columns, ES5 trailing commas); `npm run format:check` must pass, and `npm run pretty` fixes it. `.editorconfig` sets UTF-8, LF and two-space indents.
+- `src/vendor/` is copied from upstream and is not linted or formatted, so it can be compared with the original.
+
+CI runs `lint` and `format:check` and fails on a violation. Contributions must comply with all of the above.
 
 ## Tests
 
-A new feature comes with tests that cover it, and a bug fix with a regression test that fails without the fix. Unit tests live next to the code in `src/` (Vitest); behavior that needs a browser goes in `e2e/` (Playwright). The code style is enforced by ESLint and Prettier (`npm run lint`, `npm run format:check`).
+A pull request that adds functionality MUST add tests for it to the automated suite, in the same pull request. A bug fix MUST add a regression test that fails without the fix. A pull request without them is not merged, unless the change cannot be tested and the description says why.
+
+Unit tests live next to the code in `src/` (`*.test.ts`, Vitest, with fast-check for properties); behavior that needs a browser goes in `e2e/` (Playwright, through the fake Standard Notes host). `npm run test:coverage` reports statement coverage and enforces 80% on `src/core` and `src/engines`; new code should keep it there.
 
 ## Commit messages
 
