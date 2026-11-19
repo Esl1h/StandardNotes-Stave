@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { setPreferenceStore } from '../core/preferences';
+import { readPreference, setPreferenceStore } from '../core/preferences';
 import Workspace from './Workspace';
 
 const { one, two } = vi.hoisted(() => {
@@ -297,4 +297,47 @@ test('a failed export says why', async () => {
   fireEvent.click(screen.getByRole('menuitem', { name: /^Export MIDI file/ }));
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Export failed: No notes.');
+});
+
+describe('the pane divider', () => {
+  const divider = () => screen.getByRole('separator', { name: 'Resize the panes' });
+
+  test('moves five points with the arrow keys and saves it', () => {
+    setup('1: notes');
+
+    divider().focus();
+    expect(divider()).toHaveAttribute('aria-valuenow', '50');
+    fireEvent.keyDown(divider(), { key: 'ArrowRight' });
+
+    expect(divider()).toHaveAttribute('aria-valuenow', '55');
+    expect(readPreference('split')).toBe(0.55);
+  });
+
+  test.each(['pointerUp', 'pointerCancel'] as const)(
+    'saves the last dragged position on %s',
+    (end) => {
+      setup('1: notes');
+      const element = divider();
+      Object.defineProperties(element, {
+        setPointerCapture: { value: vi.fn() },
+        hasPointerCapture: { value: () => true },
+        offsetHeight: { value: 600 },
+        offsetWidth: { value: 6 },
+      });
+      vi.spyOn(element.parentElement as HTMLElement, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        top: 0,
+        width: 1000,
+        height: 600,
+      } as DOMRect);
+
+      fireEvent.pointerDown(element, { pointerId: 1 });
+      fireEvent.pointerMove(element, { pointerId: 1, clientX: 300 });
+      fireEvent.pointerMove(element, { pointerId: 1, clientX: 700 });
+      expect(readPreference('split')).toBe(0.5);
+      fireEvent[end](element, { pointerId: 1 });
+
+      expect(readPreference('split')).toBe(0.7);
+    }
+  );
 });

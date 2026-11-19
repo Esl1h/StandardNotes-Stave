@@ -690,7 +690,14 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     </div>
   );
 
-  // Dragged live, saved once on release.
+  // Dragged live, saved once on release or cancel. The last position is kept
+  // in a ref: the state a handler closed over can lag the final move.
+  const draggedSplit = useRef<number | null>(null);
+  const saveDivider = () => {
+    if (draggedSplit.current === null) return;
+    writePreference('split', draggedSplit.current);
+    draggedSplit.current = null;
+  };
   const moveDivider = (event: React.PointerEvent<HTMLDivElement>) => {
     const divider = event.currentTarget;
     if (!divider.hasPointerCapture(event.pointerId)) return;
@@ -699,6 +706,7 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
     const split = across
       ? (event.clientX - box.left) / box.width
       : (event.clientY - box.top) / box.height;
+    draggedSplit.current = clampSplit(split);
     setPrefs((current) => ({ ...current, split: clampSplit(split) }));
   };
 
@@ -715,7 +723,8 @@ function Workspace({ rawText, epoch, locked, mobile, onTextChange }: WorkspacePr
       tabIndex={0}
       onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
       onPointerMove={moveDivider}
-      onPointerUp={() => writePreference('split', prefs.split)}
+      onPointerUp={saveDivider}
+      onPointerCancel={saveDivider}
       onKeyDown={(event) => {
         const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
         if (step === undefined) return;
