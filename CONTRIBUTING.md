@@ -19,7 +19,7 @@ To test inside your Standard Notes app:
 
 ```
 npm run build
-npm run server-cors
+npm run server
 ```
 
 Then install `http://localhost:3000/ext.dev.json` via Preferences > Plugins
