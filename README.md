@@ -74,6 +74,15 @@ More screenshots: [ABC, dark theme](.github/screenshots/stave-abc-dark.png), [al
 - Phones get collapsed bars, stacked panes and a drawer with the toolbar's tools
 - Layout preferences are kept per editor in Standard Notes, never in the note
 
+## Quick start
+
+1. Install Stave in Standard Notes (steps below): Preferences > Plugins > Install Custom Plugin, paste `https://esli.cafe/StandardNotes-Stave/ext.json`.
+2. Create a note, open the **Editor** menu and pick **Stave**.
+3. In the empty note, pick **ABC** and a template appears, or type your own: the first line `X:1`, then `T:My tune`, `K:C` and a line of notes such as `CDEF GABc |]`.
+4. The staff is drawn next to the text as you type. Use the Play menu to hear it, or the File menu to export, print or save it as PDF.
+
+The [Note format](#note-format) section has a longer example for each notation.
+
 ## Installation
 
 1. Run the Standard Notes web or desktop app.
@@ -235,14 +244,35 @@ sh scripts/export-community.sh ../plugins --pr   # after a review: commit, push,
 
 ## Roadmap
 
-1. ABC with abcjs: rendering, toolbar, playback, click to source, export (done)
-2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export (done)
-3. Engine detection and switching, the full menu, mobile polish (done)
-4. Verovio as a higher quality renderer for ABC: measured and left out until it reads ABC with several voices ([record 16](docs/adr/0016-no-verovio-renderer-for-abc.md))
-5. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF (done)
-6. ChordPro (done)
+Done:
 
-The decisions behind the project are recorded in [docs/adr](docs/adr/README.md).
+1. ABC with abcjs: rendering, toolbar, playback, click to source, export
+2. alphaTex with alphaTab: notation and tablature, techniques, playback with tracks, export
+3. Engine detection and switching, the full menu, mobile polish
+4. Import of MusicXML, Guitar Pro and Capella files into alphaTex, print and PDF
+5. ChordPro
+
+Intended for the next 12 months (to November 2027), in this order, with no dates promised:
+
+1. Check every notation, import, print and player in the real Standard Notes apps (web, desktop and mobile), and fix what turns up
+2. Keep the dependencies current through Dependabot, with the same checks as any change, and refresh the screenshots and docs with each release
+3. Offer a release to the [community plugins repository](https://github.com/standardnotes/plugins) if its maintainers answer
+4. A warning before importing a very large score, if anyone reports a freeze (a limit of 5 MB on the file is in place today)
+
+Will not do:
+
+- A backend, accounts or a sync service of our own: the note stays in Standard Notes
+- Telemetry, analytics or anything fetched from a CDN at runtime
+- Storing data or interface state inside the note, or converting a note from one notation to another
+- Verovio as a second renderer for ABC: measured and left out until it reads ABC with several voices ([record 16](docs/adr/0016-no-verovio-renderer-for-abc.md))
+- MIDI import (alphaTab has no MIDI importer) and dependencies from git URLs ([record 7](docs/adr/0007-no-git-dependencies.md))
+
+The decisions behind the project are recorded in [docs/adr](docs/adr/README.md). How the plugin is built is in [ARCHITECTURE.md](ARCHITECTURE.md), how the project is run in [GOVERNANCE.md](GOVERNANCE.md), and the security requirements and assurance case are in [SECURITY.md](SECURITY.md).
+
+## Achievements
+
+- [OpenSSF Best Practices](https://www.bestpractices.dev/projects/15997): the project's badge is at the top of this page, and it works toward the silver level
+- [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/Esl1h/StandardNotes-Stave): weekly supply chain checks, with the reasons for the low Code-Review score in [SECURITY.md](SECURITY.md#supply-chain)
 
 ## Credits and license
 
