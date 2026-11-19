@@ -151,7 +151,25 @@ describe('transposition', () => {
     expect(transposeChord('F#m', 2)).toBe('G#m');
     expect(transposeChord('G', 1)).toBe('G#');
     expect(transposeChordPro('{key: Ab}\n[Ab]a [G]b [Db]c', 2)).toBe('{key: Bb}\n[Bb]a [A]b [Eb]c');
-    expect(transposeChordPro('{key: C}\n[C]a [G]b', 1)).toBe('{key: C#}\n[C#]a [G#]b');
+    expect(transposeChordPro('{key: C}\n[C]a [G]b', 1)).toBe('{key: Db}\n[Db]a [Ab]b');
+  });
+
+  test('spells by the conventional signature of the target key', () => {
+    expect(transposeChordPro('{key: A}\n[A]a [D]b [E]c', 1)).toBe('{key: Bb}\n[Bb]a [Eb]b [F]c');
+    expect(transposeChordPro('{key: G}\n[G]a [C]b', 2)).toBe('{key: A}\n[A]a [D]b');
+    expect(transposeChordPro('{key: Am}\n[Am]a [Dm]b [E7]c', 1)).toBe(
+      '{key: Bbm}\n[Bbm]a [Ebm]b [F7]c'
+    );
+    expect(transposeChordPro('{key: C}\n[C]a [F]b', 6)).toBe('{key: F#}\n[F#]a [B]b');
+    expect(transposeChordPro('{key: D}\n[D/F#]a', 3)).toBe('{key: F}\n[F/A]a');
+    expect(transposeChordPro('{key: E}\n[E]a [B7/D#]b', 1)).toBe('{key: F}\n[F]a [C7/E]b');
+    expect(transposeChordPro('{key: A}\n[Bbm7]a [D/F#]b', 1)).toBe('{key: Bb}\n[Bm7]a [Eb/G]b');
+  });
+
+  test('without a key, the chord own accidental or the direction decides', () => {
+    expect(transposeChordPro('[A]a [D/F#]b', 1)).toBe('[A#]a [D#/G]b');
+    expect(transposeChordPro('[Bb]a [A]b', 2)).toBe('[C]a [B]b');
+    expect(transposeChordPro('[A]a [E]b', -1)).toBe('[Ab]a [Eb]b');
   });
 
   test('leaves tab and grid sections as written', () => {

@@ -263,6 +263,24 @@ export function transposeChord(chord: string, semitones: number, flats?: boolean
   );
 }
 
+// The tonic a key is written with, by pitch class: nobody writes A# major
+// (10 sharps) or Gb major, so those are Bb and F#, while minors keep the
+// sharp tonics C#, G# and F# and the flat ones Eb and Bb (D#m, A#m are rare).
+const MAJOR_TONICS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+const MINOR_TONICS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
+
+/**
+ * A key name moved by semitones and respelled by its preferred tonic; the
+ * rest of the name (m, minor, ...) as written. Not a note: left alone.
+ */
+function transposeKey(key: string, semitones: number): string {
+  const match = /^([A-G](?:#|b)?)(.*)$/.exec(key);
+  if (!match) return key;
+  const minor = /^m(?!aj)/.test(match[2]);
+  const pitch = SHARPS.indexOf(shiftNote(match[1], semitones, false));
+  return (minor ? MINOR_TONICS : MAJOR_TONICS)[pitch] + match[2];
+}
+
 /** The source with every chord and the key moved by semitones; the rest as written. */
 export function transposeChordPro(src: string, semitones: number): string {
   if (semitones === 0) return src;
@@ -272,7 +290,7 @@ export function transposeChordPro(src: string, semitones: number): string {
   );
   // The spelling follows the key the song ends up in, when it names one.
   const key = /^\s*\{\s*key\s*[:\s]\s*([^}\s]*)/im.exec(src)?.[1];
-  const flats = key ? FLAT_KEYS.test(transposeChord(key, semitones)) : undefined;
+  const flats = key ? FLAT_KEYS.test(transposeKey(key, semitones)) : undefined;
   let offset = 0;
   // Splitting with a capture keeps each line ending as it was.
   return src
@@ -282,7 +300,7 @@ export function transposeChordPro(src: string, semitones: number): string {
       offset += line.length;
       if (i % 2 === 1 || raw.has(from)) return line;
       const keyLine = /^(\s*\{\s*key\s*[:\s]\s*)([^}]*?)(\s*\}\s*)$/i.exec(line);
-      if (keyLine) return keyLine[1] + transposeChord(keyLine[2], semitones) + keyLine[3];
+      if (keyLine) return keyLine[1] + transposeKey(keyLine[2], semitones) + keyLine[3];
       if (DIRECTIVE.test(line) || /^\s*#/.test(line)) return line;
       return line.replace(
         /\[([^\]]*)\]/g,
