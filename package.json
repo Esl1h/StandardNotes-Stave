@@ -55,7 +55,7 @@
     "@lezer/highlight": "^1.2.5",
     "@standardnotes/stylekit": "^5.29.3",
     "abcjs": "^6.7.2",
-    "lucide-react": "^1.73.0",
+    "lucide-react": "^1.77.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "uuid": "^14.0.3"
